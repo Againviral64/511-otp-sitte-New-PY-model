@@ -174,7 +174,10 @@ function requireAdmin(req, res, next) {
 router.get('/auth/config', (req, res) => {
     res.json({
         supabaseUrl: process.env.SUPABASE_URL,
-        supabaseKey: process.env.SUPABASE_KEY
+        supabaseKey: process.env.SUPABASE_KEY ? (process.env.SUPABASE_KEY.substring(0, 15) + '...') : null,
+        apiBase: process.env.API_BASE,
+        apiToken: process.env.API_TOKEN ? (process.env.API_TOKEN.substring(0, 5) + '...') : null,
+        isMock: isMock
     });
 });
 
