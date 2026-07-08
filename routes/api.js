@@ -640,8 +640,8 @@ router.post('/buy', requireAuth, async (req, res) => {
         };
         mockOrders.unshift(newMockOrder);
     } else {
-        // Call live gateway to buy a number with dynamic expiry duration (555API time param accepts 1: 1-10 days, 2: 11-30 days, etc. We use 1)
-        const buyUrl = `${apiBase.replace(/\/$/, '')}/api/v1/get?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(service)}&num=1&time=1`;
+        // Call live gateway to buy a number with dynamic expiry duration (555API time param accepts 1: 1-10 days, 2: 11-30 days, etc. We use 4 as standard)
+        const buyUrl = `${apiBase.replace(/\/$/, '')}/api/v1/get?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(service)}&num=1&time=4`;
         const buyResponse = await makeRequest(buyUrl);
 
         if (!buyResponse) {
