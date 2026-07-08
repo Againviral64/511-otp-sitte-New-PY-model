@@ -181,6 +181,18 @@ router.get('/auth/config', (req, res) => {
     });
 });
 
+router.get('/test-admin-stats', async (req, res) => {
+    try {
+        const { data: statsRow, error: statsError } = await supabase
+            .from('admin_overview')
+            .select('*')
+            .maybeSingle();
+        res.json({ success: true, statsRow, statsError });
+    } catch(e) {
+        res.json({ success: false, error: e.message });
+    }
+});
+
 /**
  * GET: /api/user/profile
  */
