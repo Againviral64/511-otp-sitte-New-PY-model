@@ -407,7 +407,8 @@ router.get('/admin/services', requireAuth, async (req, res) => {
                                 cost_price: parseFloat(item.unit_price),
                                 price: parseFloat(item.unit_price) + 0.10, // Default fallback profit markup in USD
                                 stock: parseInt(item.stock),
-                                group_id: group.group_id.toString()
+                                group_id: group.group_id.toString(),
+                                group_name: group.group_name
                             });
                         });
                     });
@@ -426,6 +427,7 @@ router.get('/admin/services', requireAuth, async (req, res) => {
             const dbMatch = dbServicesFiltered.find(db => db.service_id === s.code);
             return {
                 ...s,
+                group_name: dbMatch ? dbMatch.group_name : (s.group_name || 'Standard Operators'),
                 cost_price: dbMatch ? parseFloat(dbMatch.cost_price) : s.cost_price,
                 price: dbMatch ? parseFloat(dbMatch.sell_price) : s.price,
                 enabled: !!dbMatch
@@ -436,6 +438,7 @@ router.get('/admin/services', requireAuth, async (req, res) => {
             code: db.service_id,
             name: db.app_name,
             group_id: '3',
+            group_name: db.group_name || 'Standard Operators',
             cost_price: parseFloat(db.cost_price),
             price: parseFloat(db.sell_price),
             stock: db.stock,

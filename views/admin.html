@@ -898,7 +898,12 @@
 
                 // 4. Fetch app services list from the admin endpoint
                 fetch('/api/admin/services', { headers })
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error(`HTTP error! status: ${res.status}`);
+                        }
+                        return res.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             activeServicesData = data.services;
@@ -928,7 +933,15 @@
                             if (savedFilterVal) {
                                 servicesGroupFilter.value = savedFilterVal;
                             }
+                        } else {
+                            servicesTable.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger"><i class="fa-solid fa-circle-exclamation me-2"></i>Failed to load: ${data.message || 'Unknown error'}</td></tr>`;
+                            showAlert(data.message || 'Failed to load services.');
                         }
+                    })
+                    .catch(err => {
+                        console.error('Fetch services error:', err);
+                        servicesTable.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger"><i class="fa-solid fa-circle-exclamation me-2"></i>Failed to fetch: ${err.message}</td></tr>`;
+                        showAlert('Error loading services: ' + err.message);
                     });
 
                 // 5. Fetch current OTP expiry duration settings
