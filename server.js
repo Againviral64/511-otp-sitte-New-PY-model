@@ -59,9 +59,13 @@ app.get('*', (req, res) => {
 });
 
 // Launch Server
-app.listen(PORT, () => {
-    console.log(`==================================================`);
-    console.log(`🚀 SMS HUB Server successfully launched!`);
-    console.log(`🌐 Dashboard running at: http://localhost:${PORT}`);
-    console.log(`==================================================`);
-});
+if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
+    app.listen(PORT, () => {
+        console.log(`==================================================`);
+        console.log(`🚀 SMS HUB Server successfully launched!`);
+        console.log(`🌐 Dashboard running at: http://localhost:${PORT}`);
+        console.log(`==================================================`);
+    });
+}
+
+export default app;
