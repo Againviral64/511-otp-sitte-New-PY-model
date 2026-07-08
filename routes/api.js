@@ -354,7 +354,7 @@ router.get('/services', async (req, res) => {
  * GET: /api/admin/services
  * Retrieve all available services from 555api, flagged with enabled status
  */
-router.get('/admin/services', requireAuth, async (req, res) => {
+router.get('/admin/services', requireAdmin, async (req, res) => {
     if (isMock || !supabase) {
         return res.json({
             success: true,
@@ -364,23 +364,6 @@ router.get('/admin/services', requireAuth, async (req, res) => {
     }
 
     try {
-        // Check admin credentials
-        const { data: adminProfile } = await supabase
-            .from('admin_profiles')
-            .select('id')
-            .eq('id', req.user.id)
-            .maybeSingle();
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', req.user.id)
-            .maybeSingle();
-
-        const is_admin = (profile.role && profile.role.toLowerCase() === 'admin') || !!adminProfile;
-        if (!is_admin) {
-            return res.status(403).json({ success: false, message: 'Unauthorized: Admin access required.' });
-        }
 
         // Fetch dynamic groups and services from 555api
         const goodsUrl = `${apiBase.replace(/\/$/, '')}/api/v1/goods?key=${encodeURIComponent(apiToken)}`;
@@ -466,29 +449,12 @@ router.get('/admin/services', requireAuth, async (req, res) => {
  * POST: /api/admin/services/sync-active
  * Syncs the selected services checked state in the Supabase database.
  */
-router.post('/admin/services/sync-active', requireAuth, async (req, res) => {
+router.post('/admin/services/sync-active', requireAdmin, async (req, res) => {
     if (isMock || !supabase) {
         return res.json({ success: true, message: 'Mock synced successfully.' });
     }
 
     try {
-        // Check admin credentials
-        const { data: adminProfile } = await supabase
-            .from('admin_profiles')
-            .select('id')
-            .eq('id', req.user.id)
-            .maybeSingle();
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', req.user.id)
-            .maybeSingle();
-
-        const is_admin = (profile.role && profile.role.toLowerCase() === 'admin') || !!adminProfile;
-        if (!is_admin) {
-            return res.status(403).json({ success: false, message: 'Unauthorized: Admin access required.' });
-        }
 
         const { service_ids } = req.body;
         if (!Array.isArray(service_ids)) {
