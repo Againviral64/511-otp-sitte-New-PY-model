@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wholesale Admin Panel - Nova OTP Provider</title>
+    
+    <!-- Bootstrap, FontAwesome & Custom CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    
+    <style>
+        .admin-header {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding: 1.25rem 0;
+            color: white;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+        .admin-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .admin-brand i {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-tabs-custom {
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #64748b;
+            font-weight: 600;
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--radius) var(--radius) 0 0;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .nav-tabs-custom .nav-link:hover {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+        .nav-tabs-custom .nav-link.active {
+            color: var(--primary);
+            background-color: transparent;
+        }
+        .nav-tabs-custom .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+        }
+        .action-card {
+            border-radius: var(--radius-lg);
+            background: white;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card-heading {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--dark);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            border-radius: 50px;
+        }
+        .badge-pending {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+        .badge-approved {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+        .badge-rejected {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .btn-action {
+            padding: 0.4rem 0.85rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: var(--radius);
+        }
+        .table-responsive {
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table th {
+            background-color: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+        }
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Admin Header -->
+    <header class="admin-header sticky-top mb-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand admin-brand text-decoration-none" href="/">
+                <i class="fa-solid fa-screwdriver-wrench"></i>Nova OTP Admin Portal
+            </a>
+            
+            <div class="d-flex align-items-center gap-3">
+                <select class="form-select form-select-sm" id="adminCurrencySelector" style="width: 105px; border-radius: 50px; font-weight: 600; border-color: #475569; background-color: #1e293b; color: white;">
+                    <option value="USD" selected>$ USD</option>
+                    <option value="PKR">₨ PKR</option>
+                </select>
+                <span class="badge bg-primary px-3 py-2" id="adminBadge" style="border-radius: 50px;">Admin Account</span>
+                <button class="btn btn-outline-light" id="logoutBtn" style="border-radius: var(--radius);">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container pb-5">
+        <div id="alertContainer"></div>
+
+        <!-- Custom Navigation Tabs -->
+        <nav class="nav nav-tabs-custom" id="adminTabs" role="tablist">
+            <button class="nav-link active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview" type="button" role="tab">
+                <i class="fa-solid fa-chart-pie me-2"></i>Overview
+            </button>
+            <button class="nav-link" id="tab-deposits" data-bs-toggle="tab" data-bs-target="#pane-deposits" type="button" role="tab">
+                <i class="fa-solid fa-money-bill-transfer me-2"></i>Deposits
+            </button>
+            <button class="nav-link" id="tab-services" data-bs-toggle="tab" data-bs-target="#pane-services" type="button" role="tab">
+                <i class="fa-solid fa-tags me-2"></i>Services & Pricing
+            </button>
+            <button class="nav-link" id="tab-admins" data-bs-toggle="tab" data-bs-target="#pane-admins" type="button" role="tab">
+                <i class="fa-solid fa-users-gear me-2"></i>Admin Profiles
+            </button>
+            <button class="nav-link" id="tab-orders" data-bs-toggle="tab" data-bs-target="#pane-orders" type="button" role="tab">
+                <i class="fa-solid fa-clock-rotate-left me-2"></i>Orders Log
+            </button>
+            <button class="nav-link" id="tab-settings" data-bs-toggle="tab" data-bs-target="#pane-settings" type="button" role="tab">
+                <i class="fa-solid fa-gears me-2"></i>System Settings
+            </button>
+        </nav>
+
+        <!-- Tab Panes -->
+        <div class="tab-content" id="adminTabContent">
+            
+            <!-- 0. OVERVIEW DASHBOARD TAB -->
+            <div class="tab-pane fade show active" id="pane-overview" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <!-- Column 1: Today's Orders -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid var(--primary-color);">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Orders Today</div>
+                            <h2 class="fw-bold mb-0 text-primary" id="statOrdersToday">0</h2>
+                        </div>
+                    </div>
+                    <!-- Column 2: Today's Revenue -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #198754;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Revenue Today</div>
+                            <h2 class="fw-bold mb-0 text-success" id="statRevenueToday">₨ 0.00</h2>
+                        </div>
+                    </div>
+                    <!-- Column 3: Today's Cost -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #ffc107;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Cost Today</div>
+                            <h2 class="fw-bold mb-0 text-warning" id="statCostToday">₨ 0.00</h2>
+                        </div>
+                    </div>
+                    <!-- Column 4: Today's Profit -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #0dcaf0;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Profit Today</div>
+                            <h2 class="fw-bold mb-0 text-info" id="statProfitToday">₨ 0.00</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <!-- Column 1: Lifetime Orders -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #6c757d;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Orders</div>
+                            <h2 class="fw-bold mb-0 text-secondary" id="statOrdersLifetime">0</h2>
+                        </div>
+                    </div>
+                    <!-- Column 2: Lifetime Revenue -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #198754;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Revenue</div>
+                            <h2 class="fw-bold mb-0 text-success" id="statRevenueLifetime">₨ 0.00</h2>
+                        </div>
+                    </div>
+                    <!-- Column 3: Lifetime Cost -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #ffc107;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Cost</div>
+                            <h2 class="fw-bold mb-0 text-warning" id="statCostLifetime">₨ 0.00</h2>
+                        </div>
+                    </div>
+                    <!-- Column 4: Lifetime Profit -->
+                    <div class="col-md-3">
+                        <div class="main-card p-4 text-center" style="border-left: 4px solid #0dcaf0;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Profit</div>
+                            <h2 class="fw-bold mb-0 text-info" id="statProfitLifetime">₨ 0.00</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liability Cards -->
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="main-card p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h4 class="card-title mb-2 text-dark"><i class="fa-solid fa-vault text-primary me-2"></i>Total Users Credit Liability</h4>
+                                <p class="text-secondary small mb-0">Total combined balance remaining across all user accounts in the entire panel.</p>
+                            </div>
+                            <h2 class="fw-bold text-danger mb-0 text-end" id="statTotalLiability">₨ 0.00</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 1. DEPOSITS TAB -->
+            <div class="tab-pane fade" id="pane-deposits" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Left: Direct Admin Deposit Form -->
+                    <div class="col-lg-5">
+                        <div class="main-card p-4">
+                            <h3 class="card-title mb-3"><i class="fa-solid fa-circle-dollar-to-slot text-primary me-2"></i>Direct Admin Deposit</h3>
+                            <p class="text-secondary small">Directly credit balance into a user's account without requiring a deposit request.</p>
+                            
+                            <form id="directDepositForm">
+                                <div class="mb-3 text-start">
+                                    <label for="directUserIdentifier" class="form-label fw-bold">User Email or User ID</label>
+                                    <input type="text" class="form-control" id="directUserIdentifier" list="userEmailsList" placeholder="Search email, name or ID..." required autocomplete="off">
+                                    <datalist id="userEmailsList"></datalist>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="directAmount" class="form-label fw-bold">Deposit Amount (PKR)</label>
+                                    <input type="number" step="0.01" min="0.01" class="form-control" id="directAmount" placeholder="e.g. 500.00" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="directTxId" class="form-label fw-bold">Manual Deposit / Tx ID</label>
+                                    <input type="text" class="form-control" id="directTxId" placeholder="e.g. MANUAL-782635">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="directComments" class="form-label fw-bold">Comments / Description</label>
+                                    <input type="text" class="form-control" id="directComments" placeholder="Comments" value="Direct deposit by admin">
+                                </div>
+                                <button type="submit" class="btn btn-primary-custom w-100 m-0" id="directDepositSubmitBtn">
+                                    <i class="fa-solid fa-plus me-2"></i>Execute Direct Deposit
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right: Pending Deposit Requests -->
+                    <div class="col-lg-7">
+                        <div class="main-card p-4">
+                            <h3 class="card-title mb-4"><i class="fa-solid fa-receipt text-primary me-2"></i>Pending Deposit Requests</h3>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>User ID / Email</th>
+                                            <th>Method</th>
+                                            <th>Amount (PKR)</th>
+                                            <th>Transaction ID / Screenshot</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminDepositsTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-5 text-muted">
+                                                <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Loading deposit requests...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approved / Rejected / Direct Deposit History Audit Log -->
+                <div class="row g-4 mt-2">
+                    <div class="col-12">
+                        <div class="main-card p-4">
+                            <h3 class="card-title mb-4"><i class="fa-solid fa-clock-rotate-left text-success me-2"></i>Deposit & Funding History Audit Log</h3>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>User Email / ID</th>
+                                            <th>Payment Method</th>
+                                            <th>Amount (PKR)</th>
+                                            <th>Transaction Identifier</th>
+                                            <th>Status</th>
+                                            <th>Processed Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminDepositsHistoryTableBody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted">
+                                                No completed deposit transactions found.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. SERVICES & PRICING TAB -->
+            <div class="tab-pane fade" id="pane-services" role="tabpanel">
+                <!-- Bulk Actions Subpanel -->
+                <div class="row g-4 mb-4">
+                    <div class="col-12">
+                        <div class="action-card">
+                            <h4 class="card-heading"><i class="fa-solid fa-bolt text-warning"></i>Bulk Pricing Markup Tool</h4>
+                            <p class="text-secondary small">Automatically calculate and apply a percentage-based markup profit on all wholesale services.</p>
+                            
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-5">
+                                    <label class="form-label" for="bulkGroupSelect">Select Service Group</label>
+                                    <select class="form-select" id="bulkGroupSelect">
+                                        <option value="" selected>All Groups</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" for="bulkMarkupPercent">Markup Percentage</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.1" min="0" class="form-control" id="bulkMarkupPercent" placeholder="10">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-primary-custom w-100 m-0" id="applyBulkPricingBtn" style="padding: 0.75rem 1rem;">
+                                        Apply
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Management List -->
+                <div class="main-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                        <h3 class="card-title mb-0"><i class="fa-solid fa-table-list text-primary me-2"></i>Active Services & Pricing Configurations</h3>
+                        <button class="btn btn-success px-4" id="saveActiveServicesBtn" style="border-radius: var(--radius); font-weight: 700;">
+                            <i class="fa-solid fa-cloud-arrow-up me-2"></i>Save Active Selection
+                        </button>
+                    </div>
+
+                    <!-- Inline Search, Group Filter and Select All Row -->
+                    <div class="row g-3 align-items-center mb-4 bg-light p-3 rounded" style="border: 1px solid var(--border);">
+                        <!-- Select All Checkbox -->
+                        <div class="col-sm-auto d-flex align-items-center">
+                            <div class="form-check ms-1">
+                                <input class="form-check-input" type="checkbox" id="selectAllServicesCheckbox" style="transform: scale(1.25); cursor: pointer;">
+                                <label class="form-check-label fw-bold text-dark ms-2" for="selectAllServicesCheckbox" style="cursor: pointer; user-select: none;">
+                                    Select All Shown
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Group Filter Dropdown -->
+                        <div class="col-sm-3">
+                            <select class="form-select" id="servicesGroupFilter" style="border-radius: var(--radius); font-weight: 600;">
+                                <option value="" selected>All Groups (Filter)</option>
+                            </select>
+                        </div>
+
+                        <!-- Live Search Input -->
+                        <div class="col-sm-6 flex-grow-1">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0" id="servicesFilterInput" placeholder="Search services by app name or code...">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="servicesPricingTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 70px;">No.</th>
+                                    <th style="width: 70px; text-align: center;">Active</th>
+                                    <th>Service ID</th>
+                                    <th>Service App Name</th>
+                                    <th>Operator Group</th>
+                                    <th>Cost Price (USD)</th>
+                                    <th>Sell Price (USD)</th>
+                                    <th class="text-end">Edit Pricing</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminServicesTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Fetching active services...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. ADMIN PROFILES TAB -->
+            <div class="tab-pane fade" id="pane-admins" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Left Column: Add New Admin Profile -->
+                    <div class="col-lg-5">
+                        <div class="main-card p-4">
+                            <h3 class="card-title mb-3"><i class="fa-solid fa-user-plus text-primary"></i>Create Admin Profile</h3>
+                            <p class="text-secondary small">Grant full control and system administration options to another registered user account.</p>
+                            
+                            <form id="addAdminForm">
+                                <div class="mb-3">
+                                    <label for="adminEmailInput" class="form-label">User Registration Email</label>
+                                    <input type="email" class="form-control" id="adminEmailInput" placeholder="partner@novatix.com" required>
+                                    <div class="form-text">The user must already have registered an account to grant permissions.</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary-custom w-100 m-0">
+                                    <i class="fa-solid fa-shield-halved me-2"></i>Grant Admin Access
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: List Active Admins -->
+                    <div class="col-lg-7">
+                        <div class="main-card p-4">
+                            <h3 class="card-title mb-3"><i class="fa-solid fa-user-shield text-primary"></i>Authorized Admin Profiles</h3>
+                            <p class="text-secondary small">These accounts have absolute system administration permissions on the platform.</p>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Admin UUID / Email</th>
+                                            <th>Date Appointed</th>
+                                            <th class="text-end">Revoke Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminProfilesTableBody">
+                                        <tr>
+                                            <td colspan="3" class="text-center py-4 text-muted">Loading admin accounts...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. ORDERS LOG TAB -->
+            <div class="tab-pane fade" id="pane-orders" role="tabpanel">
+                <div class="main-card p-4">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+                        <h3 class="card-title mb-0"><i class="fa-solid fa-receipt text-primary me-2"></i>Wholesale Transactions & Orders Audit Log</h3>
+                        
+                        <!-- Search & Filter Controls -->
+                        <div class="d-flex align-items-center gap-2" style="max-width: 400px; width: 100%;">
+                            <span class="text-secondary small fw-bold text-nowrap"><i class="fa-solid fa-filter me-1"></i>Filter User:</span>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="adminOrdersUserFilter" list="userEmailsList" placeholder="All Users (Type email...)" autocomplete="off">
+                                <button class="btn btn-outline-secondary" id="clearOrdersFilterBtn" title="Clear Filter"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>User Account</th>
+                                    <th>Order Identifier</th>
+                                    <th>App / Group</th>
+                                    <th>Phone Number</th>
+                                    <th>OTP Details</th>
+                                    <th>Price (USD)</th>
+                                    <th>Verification Status</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminOrdersTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Querying order history log...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. SYSTEM SETTINGS TAB -->
+            <div class="tab-pane fade" id="pane-settings" role="tabpanel">
+                <div class="main-card p-4" style="max-width: 550px;">
+                    <h3 class="card-title mb-3"><i class="fa-solid fa-stopwatch text-primary me-2"></i>OTP Expiry Duration</h3>
+                    <p class="text-secondary small mb-4">Specify the maximum amount of time (in minutes) user verification requests will remain active before timing out.</p>
+                    
+                    <form id="systemSettingsForm">
+                        <div class="mb-4">
+                            <label for="otpExpiryDurationInput" class="form-label fw-bold text-dark">Countdown Expiry Limit</label>
+                            <div class="input-group">
+                                <input type="number" min="1" max="60" class="form-control" id="otpExpiryDurationInput" placeholder="4" required>
+                                <span class="input-group-text font-monospace fw-bold">Minutes</span>
+                            </div>
+                            <div class="form-text mt-2 text-muted">This settings sets the dynamic timeout countdown limit visible to users in their live orders list.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success px-4 m-0" id="saveSettingsBtn">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Save Configurations
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Modal for Individual Pricing Edit -->
+    <div class="modal fade" id="pricingModal" tabindex="-1" aria-labelledby="pricingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: var(--radius-lg);">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="pricingModalLabel">Edit Service Pricing</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small" id="modalServiceMeta"></div>
+                    
+                    <div class="mb-3">
+                        <label for="modalCostPrice" class="form-label">Service Cost Price (PKR)</label>
+                        <input type="number" step="0.001" class="form-control" id="modalCostPrice" disabled>
+                    </div>
+
+                    <!-- Pricing Calculation Mode -->
+                    <div class="mb-3">
+                        <label class="form-label d-block">Pricing Method Mode</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="pricingMode" id="modeManual" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="modeManual"><i class="fa-solid fa-keyboard me-2"></i>Manual Price</label>
+                            
+                            <input type="radio" class="btn-check" name="pricingMode" id="modePercent" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="modePercent"><i class="fa-solid fa-percentage me-2"></i>Markup</label>
+                        </div>
+                    </div>
+
+                    <!-- Options inputs -->
+                    <div class="mb-3" id="manualPriceContainer">
+                        <label for="modalSellPrice" class="form-label">Selling Price (PKR)</label>
+                        <input type="number" step="0.001" min="0" class="form-control" id="modalSellPrice" placeholder="0.00">
+                    </div>
+
+                    <div class="mb-3 d-none" id="percentMarkupContainer">
+                        <label for="modalPercentMarkup" class="form-label">Markup Profit Percentage (%)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" min="0" class="form-control" id="modalPercentMarkup" placeholder="15">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <div class="form-text mt-1 text-primary fw-bold" id="calculatedPricePreview">Calculated: ₨ 0.00</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: var(--radius);">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" id="savePriceModalBtn" style="border-radius: var(--radius);">Save Pricing</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sessionToken = localStorage.getItem('nova_session_token');
+            if (!sessionToken) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const alertContainer = document.getElementById('alertContainer');
+            const depositsTable = document.getElementById('adminDepositsTableBody');
+            const ordersTable = document.getElementById('adminOrdersTableBody');
+            const servicesTable = document.getElementById('adminServicesTableBody');
+            const adminsTable = document.getElementById('adminProfilesTableBody');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const bulkGroupSelect = document.getElementById('bulkGroupSelect');
+
+            // Modal elements
+            const pricingModalEl = document.getElementById('pricingModal');
+            const pricingModal = new bootstrap.Modal(pricingModalEl);
+            const modalServiceMeta = document.getElementById('modalServiceMeta');
+            const modalCostPrice = document.getElementById('modalCostPrice');
+            const modalSellPrice = document.getElementById('modalSellPrice');
+            const modalPercentMarkup = document.getElementById('modalPercentMarkup');
+            const modeManual = document.getElementById('modeManual');
+            const modePercent = document.getElementById('modePercent');
+            const manualPriceContainer = document.getElementById('manualPriceContainer');
+            const percentMarkupContainer = document.getElementById('percentMarkupContainer');
+            const calculatedPricePreview = document.getElementById('calculatedPricePreview');
+            const savePriceModalBtn = document.getElementById('savePriceModalBtn');
+
+            // Currency configuration
+            const exchangeRates = {
+                USD: { rate: 1.0, symbol: '$' },
+                PKR: { rate: 278.50, symbol: '₨ ' }
+            };
+
+            const currencySelector = document.getElementById('adminCurrencySelector');
+
+            function getActiveCurrency() {
+                return currencySelector.value || 'USD';
+            }
+
+            function formatPrice(usdAmount) {
+                const curr = getActiveCurrency();
+                const rate = exchangeRates[curr].rate;
+                const symbol = exchangeRates[curr].symbol;
+                return `${symbol}${(parseFloat(usdAmount || 0) * rate).toFixed(3)}`;
+            }
+
+            function formatOrderPrice(pkrAmount) {
+                const curr = getActiveCurrency();
+                if (curr === 'USD') {
+                    return `$${(parseFloat(pkrAmount || 0) / 278.50).toFixed(2)}`;
+                } else {
+                    return `₨ ${parseFloat(pkrAmount || 0).toFixed(2)}`;
+                }
+            }
+
+            currencySelector.addEventListener('change', () => {
+                const symbol = getActiveCurrency() === 'USD' ? 'USD' : 'PKR';
+                // 1. Update services pricing headers
+                const servicesCostTh = document.querySelector('#servicesPricingTable th:nth-child(4)');
+                const servicesSellTh = document.querySelector('#servicesPricingTable th:nth-child(5)');
+                if (servicesCostTh && servicesSellTh) {
+                    servicesCostTh.textContent = `Cost Price (${symbol})`;
+                    servicesSellTh.textContent = `Sell Price (${symbol})`;
+                }
+                // 2. Update orders log header
+                const ordersPriceTh = document.querySelector('#pane-orders table th:nth-child(6)');
+                if (ordersPriceTh) {
+                    ordersPriceTh.textContent = `Price (${symbol})`;
+                }
+                loadAdminData();
+            });
+
+            let currentEditingServiceId = null;
+            let activeServicesData = [];
+
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('nova_session_token');
+                localStorage.removeItem('nova_user_email');
+                window.location.href = '/login';
+            });
+
+            function showAlert(message, type = 'danger') {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert" style="border-radius: var(--radius);">
+                        <div><i class="fa-solid fa-circle-info me-2"></i>${message}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // Tabs change hook to auto-reload
+            document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(btn => {
+                btn.addEventListener('shown.bs.tab', (e) => {
+                    loadAdminData();
+                });
+            });
+
+            // Toggle Modal modes
+            modeManual.addEventListener('change', () => {
+                manualPriceContainer.classList.remove('d-none');
+                percentMarkupContainer.classList.add('d-none');
+            });
+
+            modePercent.addEventListener('change', () => {
+                manualPriceContainer.classList.add('d-none');
+                percentMarkupContainer.classList.remove('d-none');
+                updateMarkupCalculationPreview();
+            });
+
+            modalPercentMarkup.addEventListener('input', updateMarkupCalculationPreview);
+
+            function updateMarkupCalculationPreview() {
+                const cost = parseFloat(modalCostPrice.value) || 0;
+                const markup = parseFloat(modalPercentMarkup.value) || 0;
+                const calculated = cost * (1 + (markup / 100));
+                const curr = getActiveCurrency();
+                const symbol = exchangeRates[curr].symbol;
+                calculatedPricePreview.textContent = `Calculated: ${symbol}${calculated.toFixed(3)}`;
+            }
+
+            function loadAdminData() {
+                const headers = { 'Authorization': 'Bearer ' + sessionToken };
+
+                // 0. Fetch overview statistics reports
+                fetch('/api/admin/stats', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.stats) {
+                            const s = data.stats;
+                            document.getElementById('statOrdersToday').textContent = s.orders_today;
+                            document.getElementById('statRevenueToday').textContent = `₨ ${parseFloat(s.revenue_today).toFixed(2)}`;
+                            document.getElementById('statCostToday').textContent = `₨ ${parseFloat(s.cost_today).toFixed(2)}`;
+                            document.getElementById('statProfitToday').textContent = `₨ ${parseFloat(s.profit_today).toFixed(2)}`;
+
+                            document.getElementById('statOrdersLifetime').textContent = s.orders_lifetime;
+                            document.getElementById('statRevenueLifetime').textContent = `₨ ${parseFloat(s.revenue_lifetime).toFixed(2)}`;
+                            document.getElementById('statCostLifetime').textContent = `₨ ${parseFloat(s.cost_lifetime).toFixed(2)}`;
+                            document.getElementById('statProfitLifetime').textContent = `₨ ${parseFloat(s.profit_lifetime).toFixed(2)}`;
+
+                            document.getElementById('statTotalLiability').textContent = `₨ ${parseFloat(s.total_liability).toFixed(2)}`;
+                        }
+                    });
+
+                // 1. Fetch pending deposits
+                fetch('/api/admin/deposits', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            depositsTable.innerHTML = '';
+                            if (data.deposits.length === 0) {
+                                depositsTable.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No pending deposit requests.</td></tr>`;
+                                return;
+                            }
+                            data.deposits.forEach(d => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>
+                                        <div class="fw-bold">${d.user_email}</div>
+                                        <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${d.user_id}</div>
+                                    </td>
+                                    <td><span class="badge bg-secondary font-monospace">${d.method}</span></td>
+                                    <td><strong>₨ ${parseFloat(d.amount).toFixed(2)}</strong></td>
+                                    <td>
+                                        <div>TxID: <code>${d.tx_id}</code></div>
+                                        ${d.screenshot_url ? `<a href="${d.screenshot_url}" target="_blank" class="small text-decoration-none text-primary"><i class="fa-solid fa-image me-1"></i>View Attachment Proof</a>` : '<span class="text-muted small">No attachment</span>'}
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-action btn-success me-1 px-3" onclick="processDeposit('${d.id}', 'APPROVED')">Approve</button>
+                                        <button class="btn btn-action btn-danger px-3" onclick="processDeposit('${d.id}', 'REJECTED')">Reject</button>
+                                    </td>
+                                `;
+                                depositsTable.appendChild(tr);
+                            });
+                        } else {
+                            showAlert(data.message || 'Failed to load deposits.');
+                        }
+                    });
+
+                // 1.5 Fetch completed deposits history log
+                const depositsHistoryTable = document.getElementById('adminDepositsHistoryTableBody');
+                fetch('/api/admin/deposits/history', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && depositsHistoryTable) {
+                            depositsHistoryTable.innerHTML = '';
+                            if (data.deposits.length === 0) {
+                                depositsHistoryTable.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No completed deposit transactions found.</td></tr>`;
+                                return;
+                            }
+                            data.deposits.forEach(d => {
+                                const tr = document.createElement('tr');
+                                const statusClass = d.status === 'APPROVED' ? 'badge-approved' : 'badge-rejected';
+                                tr.innerHTML = `
+                                    <td>
+                                        <div class="fw-bold">${d.user_email}</div>
+                                        <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${d.user_id}</div>
+                                    </td>
+                                    <td><span class="badge bg-secondary font-monospace">${d.method}</span></td>
+                                    <td><strong>₨ ${parseFloat(d.amount).toFixed(2)}</strong></td>
+                                    <td>
+                                        <div>TxID: <code>${d.tx_id}</code></div>
+                                        ${d.screenshot_url ? `<a href="${d.screenshot_url}" target="_blank" class="small text-decoration-none text-primary"><i class="fa-solid fa-image me-1"></i>View Proof</a>` : '<span class="text-muted small">No attachment</span>'}
+                                    </td>
+                                    <td><span class="status-badge ${statusClass}">${d.status}</span></td>
+                                    <td class="small text-secondary" style="font-size:0.75rem;">${new Date(d.created_at).toLocaleString()}</td>
+                                `;
+                                depositsHistoryTable.appendChild(tr);
+                            });
+                        }
+                    });
+
+                // 2. Fetch all orders (with user filter support)
+                const userFilterVal = document.getElementById('adminOrdersUserFilter')?.value.trim() || '';
+                const ordersUrl = userFilterVal ? `/api/admin/orders?user_email=${encodeURIComponent(userFilterVal)}` : '/api/admin/orders';
+                fetch(ordersUrl, { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            ordersTable.innerHTML = '';
+                            if (data.orders.length === 0) {
+                                ordersTable.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No orders found.</td></tr>`;
+                                return;
+                            }
+                            data.orders.forEach(o => {
+                                const tr = document.createElement('tr');
+                                const statusClass = o.status === 'COMPLETED' ? 'badge-approved' : (o.status === 'PENDING' ? 'badge-pending' : 'badge-rejected');
+                                tr.innerHTML = `
+                                    <td>
+                                        <div class="fw-bold small">${o.user_email}</div>
+                                    </td>
+                                    <td><code class="font-monospace" style="font-size:0.8rem;">${o.order_id}</code></td>
+                                    <td>
+                                        <div class="fw-bold small">${o.service}</div>
+                                        <div class="text-muted small" style="font-size:0.75rem;">${o.country || ''}</div>
+                                    </td>
+                                    <td><strong>${o.number}</strong></td>
+                                    <td><code class="fs-6 text-primary">${o.otp || '------'}</code></td>
+                                    <td>${formatOrderPrice(o.price)}</td>
+                                    <td><span class="status-badge ${statusClass}">${o.status}</span></td>
+                                    <td class="small text-secondary" style="font-size:0.75rem;">${new Date(o.created_at).toLocaleString()}</td>
+                                `;
+                                ordersTable.appendChild(tr);
+                            });
+                        }
+                    });
+
+                // 3. Fetch admin profiles
+                fetch('/api/admin/profiles', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            adminsTable.innerHTML = '';
+                            if (data.admins.length === 0) {
+                                adminsTable.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted">No admin profiles configured.</td></tr>`;
+                                return;
+                            }
+                            data.admins.forEach(admin => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>
+                                        <div class="fw-bold">${admin.email}</div>
+                                        <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${admin.id}</div>
+                                    </td>
+                                    <td class="small text-secondary">${new Date(admin.created_at).toLocaleDateString()}</td>
+                                    <td class="text-end">
+                                        <button class="btn btn-action btn-outline-danger" onclick="removeAdmin('${admin.id}')">
+                                            <i class="fa-solid fa-trash-can"></i> Revoke
+                                        </button>
+                                    </td>
+                                `;
+                                adminsTable.appendChild(tr);
+                            });
+                        }
+                    });
+
+                // 4. Fetch app services list from the admin endpoint
+                fetch('/api/admin/services', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            activeServicesData = data.services;
+                            renderServicesPricingTable(data.services);
+
+                            const uniqueGroups = [...new Set(data.services.map(s => s.group_name || 'Standard Operators'))];
+                            
+                            // 1. Bulk Select dropdown
+                            bulkGroupSelect.innerHTML = '<option value="" selected>All Groups</option>';
+                            uniqueGroups.forEach(grp => {
+                                const opt = document.createElement('option');
+                                opt.value = grp;
+                                opt.textContent = grp;
+                                bulkGroupSelect.appendChild(opt);
+                            });
+
+                            // 2. Inline Group Filter dropdown
+                            const servicesGroupFilter = document.getElementById('servicesGroupFilter');
+                            const savedFilterVal = servicesGroupFilter.value;
+                            servicesGroupFilter.innerHTML = '<option value="">All Groups (Filter)</option>';
+                            uniqueGroups.forEach(grp => {
+                                const opt = document.createElement('option');
+                                opt.value = grp;
+                                opt.textContent = grp;
+                                servicesGroupFilter.appendChild(opt);
+                            });
+                            if (savedFilterVal) {
+                                servicesGroupFilter.value = savedFilterVal;
+                            }
+                    });
+
+                // 5. Fetch current OTP expiry duration settings
+                fetch('/api/admin/settings', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('otpExpiryDurationInput').value = data.otp_expiry_duration;
+                        }
+                    });
+
+                // 6. Fetch live users list to populate the autocomplete datalist
+                fetch('/api/admin/users', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success && data.users) {
+                            const datalist = document.getElementById('userEmailsList');
+                            if (datalist) {
+                                datalist.innerHTML = '';
+                                data.users.forEach(user => {
+                                    const opt = document.createElement('option');
+                                    opt.value = user.email;
+                                    opt.textContent = `${user.name || 'User'} (${user.id})`;
+                                    datalist.appendChild(opt);
+                                });
+                            }
+                        }
+                    });
+            }
+
+            // Render/Filter Pricing table
+            function renderServicesPricingTable(services) {
+                servicesTable.innerHTML = '';
+                if (services.length === 0) {
+                    servicesTable.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No services found.</td></tr>`;
+                    return;
+                }
+
+                // Sort: active (enabled: true) services float to the top
+                const sorted = [...services].sort((a, b) => {
+                    if (a.enabled && !b.enabled) return -1;
+                    if (!a.enabled && b.enabled) return 1;
+                    return parseInt(a.code || 0) - parseInt(b.code || 0);
+                });
+
+                sorted.forEach((s, index) => {
+                    const tr = document.createElement('tr');
+                    const isChecked = s.enabled ? 'checked' : '';
+                    tr.innerHTML = `
+                        <td><span class="text-muted fw-bold">${index + 1}</span></td>
+                        <td style="text-align: center;">
+                            <input type="checkbox" class="form-check-input service-check-item" data-id="${s.code}" ${isChecked} style="transform: scale(1.25); cursor: pointer;">
+                        </td>
+                        <td><code class="font-monospace">${s.code}</code></td>
+                        <td><strong class="text-dark">${s.name}</strong></td>
+                        <td><span class="badge bg-light text-dark border">${s.group_name || 'Standard'}</span></td>
+                        <td>${formatPrice(s.cost_price)}</td>
+                        <td><strong class="text-primary">${formatPrice(s.price)}</strong></td>
+                        <td class="text-end">
+                            <button class="btn btn-action btn-outline-primary" onclick="openPricingModal('${s.code}')">
+                                <i class="fa-solid fa-pen-to-square"></i> Change
+                            </button>
+                        </td>
+                    `;
+                    servicesTable.appendChild(tr);
+                });
+                
+                updateSelectAllCheckboxState();
+            }
+
+            // Helper to get currently shown (filtered) services
+            function getFilteredServices() {
+                const query = document.getElementById('servicesFilterInput').value.toLowerCase().trim();
+                const groupFilter = document.getElementById('servicesGroupFilter').value;
+                
+                return activeServicesData.filter(s => {
+                    const matchesSearch = s.name.toLowerCase().includes(query) || s.code.includes(query);
+                    const matchesGroup = !groupFilter || s.group_name === groupFilter;
+                    return matchesSearch && matchesGroup;
+                });
+            }
+
+            // Multi-filter execution
+            function applyFiltersAndRender() {
+                const filtered = getFilteredServices();
+                renderServicesPricingTable(filtered);
+            }
+
+            document.getElementById('servicesFilterInput').addEventListener('input', applyFiltersAndRender);
+            document.getElementById('servicesGroupFilter').addEventListener('change', applyFiltersAndRender);
+
+            // Listen to checkbox changes to update local state
+            servicesTable.addEventListener('change', (e) => {
+                if (e.target.classList.contains('service-check-item')) {
+                    const id = e.target.getAttribute('data-id');
+                    const isChecked = e.target.checked;
+                    const match = activeServicesData.find(s => s.code === id);
+                    if (match) {
+                        match.enabled = isChecked;
+                    }
+                    applyFiltersAndRender(); // Re-sort and re-render instantly!
+                }
+            });
+
+            // Select All Checkbox logic
+            const selectAllCheckbox = document.getElementById('selectAllServicesCheckbox');
+            selectAllCheckbox.addEventListener('change', () => {
+                const isChecked = selectAllCheckbox.checked;
+                const shownServices = getFilteredServices();
+                shownServices.forEach(s => {
+                    s.enabled = isChecked;
+                });
+                
+                // Update checkbox inputs in DOM
+                document.querySelectorAll('.service-check-item').forEach(cb => {
+                    cb.checked = isChecked;
+                });
+            });
+
+            function updateSelectAllCheckboxState() {
+                const shownServices = getFilteredServices();
+                if (shownServices.length === 0) {
+                    selectAllCheckbox.checked = false;
+                    return;
+                }
+                const allChecked = shownServices.every(s => s.enabled);
+                selectAllCheckbox.checked = allChecked;
+            }
+
+            // Save active services selection
+            document.getElementById('saveActiveServicesBtn').addEventListener('click', () => {
+                const activeIds = activeServicesData
+                    .filter(s => s.enabled)
+                    .map(s => s.code);
+
+                const saveBtn = document.getElementById('saveActiveServicesBtn');
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving Selection...';
+
+                fetch('/api/admin/services/sync-active', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({ service_ids: activeIds })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-2"></i>Save Active Selection';
+                    if (data.success) {
+                        showAlert('Active services selection synchronized successfully!', 'success');
+                        loadAdminData();
+                    } else {
+                        showAlert(data.message || 'Synchronization failed.', 'danger');
+                    }
+                })
+                .catch(err => {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-2"></i>Save Active Selection';
+                    showAlert('Sync connection failed: ' + err.message, 'danger');
+                });
+            });
+
+            // Open pricing modal
+            window.openPricingModal = function(code) {
+                const service = activeServicesData.find(s => s.code === code);
+                if (!service) return;
+
+                currentEditingServiceId = code;
+                const curr = getActiveCurrency();
+                const rate = exchangeRates[curr].rate;
+                const symbol = exchangeRates[curr].symbol;
+
+                modalServiceMeta.innerHTML = `<strong>Service:</strong> ${service.name} (Code: ${service.code})<br><strong>Category/Operator Group:</strong> ${service.group_name || 'Default'}`;
+                
+                // Show prices in the selected currency
+                modalCostPrice.value = (parseFloat(service.cost_price || 0) * rate).toFixed(3);
+                modalSellPrice.value = (parseFloat(service.price || 0) * rate).toFixed(3);
+                modalPercentMarkup.value = '';
+                calculatedPricePreview.textContent = `Calculated: ${symbol}0.00`;
+
+                // Update input field labels in modal dynamically
+                document.querySelector('label[for="modalCostPrice"]').textContent = `Service Cost Price (${curr})`;
+                document.querySelector('label[for="modalSellPrice"]').textContent = `Selling Price (${curr})`;
+
+                // reset radio
+                modeManual.checked = true;
+                manualPriceContainer.classList.remove('d-none');
+                percentMarkupContainer.classList.add('d-none');
+
+                pricingModal.show();
+            };
+
+            // Save individual price changes
+            savePriceModalBtn.addEventListener('click', () => {
+                if (!currentEditingServiceId) return;
+
+                const curr = getActiveCurrency();
+                const rate = exchangeRates[curr].rate;
+                let sellPriceVal = parseFloat(modalSellPrice.value);
+                const costPriceVal = parseFloat(modalCostPrice.value);
+
+                if (modePercent.checked) {
+                    const markup = parseFloat(modalPercentMarkup.value);
+                    if (isNaN(markup) || markup < 0) {
+                        alert('Please enter a valid positive markup percentage.');
+                        return;
+                    }
+                    sellPriceVal = costPriceVal * (1 + (markup / 100));
+                }
+
+                if (isNaN(sellPriceVal) || sellPriceVal < 0) {
+                    alert('Please specify a valid pricing value.');
+                    return;
+                }
+
+                // Convert prices back to USD before sending to backend
+                const costPriceUSD = costPriceVal / rate;
+                const sellPriceUSD = sellPriceVal / rate;
+
+                savePriceModalBtn.disabled = true;
+                savePriceModalBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                fetch('/api/admin/services/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({
+                        service_id: currentEditingServiceId,
+                        cost_price: costPriceUSD,
+                        sell_price: sellPriceUSD
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    savePriceModalBtn.disabled = false;
+                    savePriceModalBtn.innerHTML = 'Save Pricing';
+                    if (data.success) {
+                        pricingModal.hide();
+                        showAlert('Service pricing successfully updated!', 'success');
+                        loadAdminData();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            });
+
+            // Apply bulk pricing
+            document.getElementById('applyBulkPricingBtn').addEventListener('click', () => {
+                const markup = parseFloat(document.getElementById('bulkMarkupPercent').value);
+                const group = document.getElementById('bulkGroupSelect').value;
+
+                if (isNaN(markup) || markup < 0) {
+                    showAlert('Please enter a valid markup percentage.', 'warning');
+                    return;
+                }
+
+                const applyBtn = document.getElementById('applyBulkPricingBtn');
+                applyBtn.disabled = true;
+                applyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+                fetch('/api/admin/services/bulk-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({
+                        markup_percent: markup,
+                        group_name: group
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    applyBtn.disabled = false;
+                    applyBtn.innerHTML = 'Apply';
+                    if (data.success) {
+                        showAlert('Bulk markup successfully updated across selected services!', 'success');
+                        loadAdminData();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            });
+
+            // Grant Admin access form submission
+            document.getElementById('addAdminForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('adminEmailInput').value;
+
+                fetch('/api/admin/profiles/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({ email: email })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(`Admin permissions granted to ${email} successfully!`, 'success');
+                        document.getElementById('adminEmailInput').value = '';
+                        loadAdminData();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            });
+
+            // Remove/Revoke Admin role
+            window.removeAdmin = function(id) {
+                if (!confirm('Are you absolutely sure you want to revoke admin capabilities from this account?')) return;
+
+                fetch('/api/admin/profiles/remove', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({ id: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('Admin role successfully revoked.', 'success');
+                        loadAdminData();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            };
+
+            // Make processDeposit global
+            window.processDeposit = function(id, action) {
+                fetch('/api/admin/deposit/action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({ deposit_id: id, action: action })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(`Deposit request was successfully ${action.toLowerCase()}!`, 'success');
+                        loadAdminData();
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                });
+            };
+
+            // Direct Admin Deposit form submission handler
+            const directDepositForm = document.getElementById('directDepositForm');
+            const directDepositSubmitBtn = document.getElementById('directDepositSubmitBtn');
+
+            if (directDepositForm) {
+                directDepositForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const identifier = document.getElementById('directUserIdentifier').value.trim();
+                    const amount = parseFloat(document.getElementById('directAmount').value);
+                    const txId = document.getElementById('directTxId').value.trim();
+                    const comments = document.getElementById('directComments').value.trim();
+
+                    if (!identifier || isNaN(amount) || amount <= 0) {
+                        alert('Please fill out a valid user email/ID and deposit amount.');
+                        return;
+                    }
+
+                    directDepositSubmitBtn.disabled = true;
+                    directDepositSubmitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Executing...';
+
+                    fetch('/api/admin/deposits/direct', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + sessionToken
+                        },
+                        body: JSON.stringify({
+                            user_identifier: identifier,
+                            amount: amount,
+                            tx_id: txId,
+                            comments: comments
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        directDepositSubmitBtn.disabled = false;
+                        directDepositSubmitBtn.innerHTML = '<i class="fa-solid fa-plus me-2"></i>Execute Direct Deposit';
+                        if (data.success) {
+                            showAlert(`Direct deposit of ₨ ${amount.toFixed(2)} to ${identifier} succeeded!`, 'success');
+                            directDepositForm.reset();
+                            document.getElementById('directComments').value = 'Direct deposit by admin';
+                            loadAdminData();
+                        } else {
+                            showAlert(data.message || 'Direct deposit failed.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        directDepositSubmitBtn.disabled = false;
+                        directDepositSubmitBtn.innerHTML = '<i class="fa-solid fa-plus me-2"></i>Execute Direct Deposit';
+                        showAlert('Failed to connect to direct deposit endpoint: ' + err.message, 'danger');
+                    });
+                });
+            }
+
+            // System Settings configurations submission handler
+            const systemSettingsForm = document.getElementById('systemSettingsForm');
+            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+            if (systemSettingsForm) {
+                systemSettingsForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const duration = parseInt(document.getElementById('otpExpiryDurationInput').value);
+                    if (isNaN(duration) || duration < 1) {
+                        alert('Please enter a valid positive countdown timeout limit.');
+                        return;
+                    }
+
+                    saveSettingsBtn.disabled = true;
+                    saveSettingsBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                    fetch('/api/admin/settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + sessionToken
+                        },
+                        body: JSON.stringify({ duration: duration })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        saveSettingsBtn.disabled = false;
+                        saveSettingsBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Configurations';
+                        if (data.success) {
+                            showAlert('System configurations successfully saved!', 'success');
+                            loadAdminData();
+                        } else {
+                            showAlert(data.message || 'Save settings failed.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        saveSettingsBtn.disabled = false;
+                        saveSettingsBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Configurations';
+                        showAlert('Connection to save settings failed: ' + err.message, 'danger');
+                    });
+                });
+            }
+
+            // Audit log order filtering hooks
+            const adminOrdersUserFilter = document.getElementById('adminOrdersUserFilter');
+            const clearOrdersFilterBtn = document.getElementById('clearOrdersFilterBtn');
+
+            if (adminOrdersUserFilter) {
+                adminOrdersUserFilter.addEventListener('input', () => {
+                    loadAdminData();
+                });
+            }
+
+            if (clearOrdersFilterBtn) {
+                clearOrdersFilterBtn.addEventListener('click', () => {
+                    adminOrdersUserFilter.value = '';
+                    loadAdminData();
+                });
+            }
+
+            loadAdminData();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Nova OTP Provider</title>
+    
+    <!-- Bootstrap, FontAwesome, Google Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+        
+        /* Premium Sidebar Layout */
+        .sidebar {
+            width: 280px;
+            background: #0f172a;
+            color: #cbd5e1;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #1e293b;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .sidebar-brand {
+            padding: 1.75rem 1.5rem;
+            border-bottom: 1px solid #1e293b;
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none !important;
+        }
+        .sidebar-logo {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+        .sidebar-menu {
+            padding: 1.5rem 0;
+            flex-grow: 1;
+            list-style: none;
+            margin: 0;
+        }
+        .sidebar-item {
+            margin-bottom: 0.25rem;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.85rem 1.5rem;
+            color: #94a3b8;
+            text-decoration: none !important;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .sidebar-link:hover {
+            color: white;
+            background: rgba(30, 41, 59, 0.5);
+        }
+        .sidebar-link.active {
+            color: white;
+            background: #1e293b;
+            border-left-color: var(--primary);
+            font-weight: 600;
+        }
+        .sidebar-user {
+            padding: 1.25rem;
+            border-top: 1px solid #1e293b;
+            background: #090d16;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        /* Main Workspace Container */
+        .workspace {
+            margin-left: 280px;
+            flex-grow: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s;
+        }
+        
+        /* Workspace Header */
+        .workspace-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        .workspace-content {
+            padding: 2rem;
+            flex-grow: 1;
+        }
+        
+        /* Pane Toggle Utilities */
+        .pane-content {
+            display: none;
+        }
+        .pane-content.active {
+            display: block;
+        }
+        
+        /* Services table search design */
+        .search-box {
+            position: relative;
+        }
+        .search-box i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+        .search-box input {
+            padding-left: 40px;
+            border-radius: var(--radius);
+        }
+
+        /* Support chat box components */
+        .chat-container {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            height: 480px;
+        }
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--light);
+            font-weight: 600;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8fafc;
+        }
+        .chat-bubble {
+            max-width: 75%;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+        }
+        .chat-bubble.sent {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .chat-bubble.received {
+            background: #e2e8f0;
+            color: #0f172a;
+            align-self: flex-start;
+        }
+        .chat-input-area {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+            background: white;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Left Sidebar Menu -->
+    <aside class="sidebar">
+        <a class="sidebar-brand" href="/">
+            <i class="fa-solid fa-square-rss sidebar-logo me-2"></i>
+            <span class="fs-4 fw-bold text-white">Nova OTP</span>
+        </a>
+        
+        <ul class="sidebar-menu">
+            <li class="sidebar-item">
+                <a class="sidebar-link active" href="#" data-pane="otp">
+                    <i class="fa-solid fa-cart-shopping me-3"></i>Get SMS Activation
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="services">
+                    <i class="fa-solid fa-list me-3"></i>Services & Rates
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="orders">
+                    <i class="fa-solid fa-clock-rotate-left me-3"></i>Order History
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="deposit">
+                    <i class="fa-solid fa-wallet me-3"></i>Deposit Funds
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="api">
+                    <i class="fa-solid fa-code me-3"></i>Developer API
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="tickets">
+                    <i class="fa-solid fa-headset me-3"></i>Support Tickets
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="settings">
+                    <i class="fa-solid fa-gear me-3"></i>Account Settings
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-user">
+            <div class="d-flex align-items-center gap-2">
+                <div class="user-avatar" id="avatarLetter">U</div>
+                <div style="max-width: 140px;">
+                    <div class="fw-bold text-white text-truncate small" id="userNameLabel">Loading...</div>
+                    <div class="text-secondary small text-truncate" id="userEmailLabel">partner@novatix.com</div>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger p-1 border-0" id="logoutBtn" title="Logout">
+                <i class="fa-solid fa-right-from-bracket fs-5"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <main class="workspace">
+        <!-- Top Workspace Header -->
+        <header class="workspace-header">
+            <h1 class="page-title" id="paneTitle">Get SMS Activation</h1>
+            
+            <div class="d-flex align-items-center gap-3">
+                <!-- Currency Selector -->
+                <div class="d-flex align-items-center">
+                    <select class="form-select form-select-sm" id="currencySelector" style="width: 110px; border-radius: 50px; font-weight: 600; border-color: #cbd5e1;">
+                        <option value="PKR" selected>₨ PKR</option>
+                        <option value="USD">$ USD</option>
+                        <option value="INR">₹ INR</option>
+                        <option value="BDT">৳ BDT</option>
+                        <option value="NPR">रू NPR</option>
+                        <option value="RUB">₽ RUB</option>
+                    </select>
+                </div>
+
+                <!-- Balance Display -->
+                <div class="balance-card">
+                    <div>
+                        <div class="balance-label">Balance</div>
+                        <div class="balance-value" id="balanceAmount">$0.000</div>
+                    </div>
+                    <button class="btn btn-refresh" id="refreshBalanceBtn" title="Refresh Balance">
+                        <i class="fa-solid fa-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- Spend Display -->
+                <div class="balance-card bg-light border" style="box-shadow: none;">
+                    <div>
+                        <div class="balance-label" style="color: #64748b;">Total Spent</div>
+                        <div class="balance-value text-dark" id="spendAmount">$0.000</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Workspace Content Area -->
+        <div class="workspace-content">
+            <div id="alertContainer"></div>
+
+            <!-- ======================= PANE: GET OTP ======================= -->
+            <div class="pane-content active" id="pane-otp">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="main-card">
+                            <!-- API Order Form -->
+
+                            <!-- Panel: API Order Form -->
+                            <div id="apiOrderForm">
+                                <div class="mb-3">
+                                    <label for="countrySelect" class="form-label">1. Operator Category Group</label>
+                                    <select class="form-select" id="countrySelect">
+                                        <option value="" selected disabled>Select Category/Group</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="serviceSelect" class="form-label">2. App Service</label>
+                                    <select class="form-select" id="serviceSelect">
+                                        <option value="" selected disabled>Select Service (Choose Group First)</option>
+                                    </select>
+                                </div>
+
+                                <div class="price-box mb-4 d-none" id="priceDisplay">
+                                    Price: $0.000
+                                </div>
+
+                                <button class="btn btn-primary-custom w-100 py-3 fs-5 m-0" id="buyNumberBtn">
+                                    <i class="fa-solid fa-cart-shopping me-2"></i>Buy Number
+                                </button>
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Live activation poll logs -->
+                    <div class="col-lg-6">
+                        <div class="main-card p-4">
+                            <h2 class="card-title"><i class="fa-solid fa-bolt text-primary me-2"></i>Live Activation</h2>
+                            
+                            <div class="number-box mb-4" id="numberDisplay">
+                                No active order
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-6">
+                                    <div class="small text-secondary">Order ID</div>
+                                    <div class="fw-bold" id="orderIdDisplay">None</div>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <div class="small text-secondary mb-1">Status</div>
+                                    <span class="badge-custom" id="orderStatusBadge">INACTIVE</span>
+                                </div>
+                            </div>
+
+                            <div class="sms-status-container" id="smsStatusContainer">
+                                <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                    <div class="pulse-spinner d-none" id="waitingSpinner"></div>
+                                    <span id="waitingStatusText" class="fw-semibold text-secondary">Awaiting configuration...</span>
+                                </div>
+                                
+                                <div class="form-label mt-3 d-flex justify-content-between align-items-center">
+                                    <span>One-Time Password (OTP)</span>
+                                    <span class="badge bg-secondary font-monospace" id="timeoutLimitBadge" style="font-size: 0.75rem; border-radius: 4px;">Timeout: 4 mins</span>
+                                </div>
+                                <div class="otp-box mb-3" id="otpCodeDisplay">------</div>
+                                
+                                <button class="btn btn-copy w-100" id="copyOtpBtn" disabled>
+                                    <i class="fa-solid fa-copy me-2"></i>Copy OTP Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: SERVICES ======================= -->
+            <div class="pane-content" id="pane-services">
+                <div class="main-card p-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                        <h3 class="section-title mb-0 border-0"><i class="fa-solid fa-list text-primary me-2"></i>Available Services & Rates</h3>
+                        
+                        <div class="search-box" style="width: 300px;">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" class="form-control" id="servicesSearch" placeholder="Search service app...">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>App Name</th>
+                                    <th>Category Group</th>
+                                    <th>Product ID</th>
+                                    <th>Price</th>
+                                    <th>Stock Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesTableBody">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">Loading services list...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: ORDER HISTORY ======================= -->
+            <div class="pane-content" id="pane-orders">
+                <div class="main-card p-4">
+                    <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>My Orders Log</h3>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Service</th>
+                                    <th>Phone Number</th>
+                                    <th>Paid Rate</th>
+                                    <th>OTP Code</th>
+                                    <th>Created At</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderHistoryTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">Loading order history...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: DEPOSIT FUNDS ======================= -->
+            <div class="pane-content" id="pane-deposit">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="main-card p-4">
+                            <h3 class="section-title"><i class="fa-solid fa-plus text-primary me-2"></i>Load Balance</h3>
+                            
+                            <div class="mb-3">
+                                <label for="depositMethod" class="form-label">Payment Channel</label>
+                                <select class="form-select" id="depositMethod">
+                                    <option value="" selected disabled>Select Wallet / Bank</option>
+                                    <option value="Easypaisa">Easypaisa</option>
+                                    <option value="Jazzcash">Jazzcash</option>
+                                    <option value="Zindagi">Zindagi App</option>
+                                    <option value="Bank">Bank Account</option>
+                                </select>
+                            </div>
+
+                            <!-- Interactive account guidelines details -->
+                            <div class="payment-instructions-box d-none" id="paymentInstructions">
+                                <i class="fa-solid fa-circle-info me-2 text-primary"></i>
+                                <span id="instructionsDetails">Please choose a payment method.</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="depositAmount" class="form-label">Amount (USD equivalent)</label>
+                                <input type="number" step="0.01" min="1" class="form-control" id="depositAmount" placeholder="e.g. 10">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="depositTxId" class="form-label">Transaction ID (TxID)</label>
+                                <input type="text" class="form-control" id="depositTxId" placeholder="e.g. 82730198273">
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="depositScreenshot" class="form-label">Screenshot / Payment Note</label>
+                                <textarea class="form-control" id="depositScreenshot" rows="2" placeholder="Paste link or write receipts details..."></textarea>
+                            </div>
+
+                            <button class="btn btn-primary-custom m-0 w-100 py-2" id="submitDepositBtn">
+                                <i class="fa-solid fa-upload me-2"></i>Submit Deposit Request
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="main-card p-4">
+                            <h3 class="section-title"><i class="fa-solid fa-clock text-primary me-2"></i>Deposit History</h3>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>TxID</th>
+                                            <th>Method</th>
+                                            <th>Amount</th>
+                                            <th>Time</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="depositHistoryTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">No deposits made yet.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: DEVELOPER API ======================= -->
+            <div class="pane-content" id="pane-api">
+                <div class="main-card p-4">
+                    <h3 class="section-title"><i class="fa-solid fa-code text-primary me-2"></i>Developer API Key</h3>
+                    
+                    <div class="bg-light p-4 rounded mb-4">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <div class="small text-secondary fw-semibold text-uppercase">Your Private API Key:</div>
+                                <div class="fs-4 fw-bold font-monospace mt-1" id="apiKeyDisplay">Generating Key...</div>
+                            </div>
+                            <button class="btn btn-primary-custom btn-sm m-0" id="rotateApiKeyBtn">
+                                <i class="fa-solid fa-arrows-rotate me-2"></i>Generate / Rotate Key
+                            </button>
+                        </div>
+                    </div>
+
+                    <h4 class="fw-bold mt-4 mb-3">API Reseller Methods</h4>
+                    <p class="text-secondary mb-4">Integrate OTP activation endpoints inside your panels and Telegram bots using standard GET requests.</p>
+
+                    <h5 class="fw-bold mb-2">1. Check Reseller Balance</h5>
+                    <div class="payment-instructions-box mb-4">
+                        <strong>Request Endpoint (GET):</strong><br>
+                        <code id="apiDocBalanceUrl" class="user-select-all">http://localhost:3000/api/v1/info?key=YOUR_API_KEY</code>
+                    </div>
+
+                    <h5 class="fw-bold mb-2">2. Get Verification Number</h5>
+                    <div class="payment-instructions-box mb-4">
+                        <strong>Request Endpoint (GET):</strong><br>
+                        <code id="apiDocBuyUrl" class="user-select-all">http://localhost:3000/api/v1/get?key=YOUR_API_KEY&id=PRODUCT_ID</code>
+                        <div class="small mt-2 text-muted">Replace <code>PRODUCT_ID</code> with the service code (e.g. <code>337</code> for Telegram).</div>
+                    </div>
+
+                    <h5 class="fw-bold mb-2">3. Retrieve SMS message code</h5>
+                    <div class="payment-instructions-box mb-4">
+                        <strong>Request Endpoint (GET):</strong><br>
+                        <code id="apiDocMsgUrl" class="user-select-all">http://localhost:3000/api/v1/msg?key=YOUR_API_KEY&id=PRODUCT_ID&number=PHONE_NUMBER</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: SUPPORT TICKETS ======================= -->
+            <div class="pane-content" id="pane-tickets">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <!-- Create ticket form -->
+                        <div class="main-card p-4">
+                            <h3 class="section-title"><i class="fa-solid fa-circle-question text-primary me-2"></i>Open a Support Ticket</h3>
+                            
+                            <form id="createTicketForm">
+                                <div class="mb-3">
+                                    <label for="ticketTitle" class="form-label">Ticket Subject</label>
+                                    <input type="text" class="form-control" id="ticketTitle" placeholder="e.g. Transaction ID Help" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ticketCategory" class="form-label">Category</label>
+                                    <select class="form-select" id="ticketCategory">
+                                        <option value="Deposit">Deposit Issue</option>
+                                        <option value="OTP">OTP Activation Failure</option>
+                                        <option value="API">Developer API Inquiry</option>
+                                        <option value="Other">Other Help</option>
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="ticketMessage" class="form-label">Detailed Message</label>
+                                    <textarea class="form-control" id="ticketMessage" rows="4" placeholder="Describe your issue in detail..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary-custom w-100 m-0 py-2" id="submitTicketBtn">
+                                    <i class="fa-solid fa-paper-plane me-2"></i>Send Support Ticket
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <!-- Ticket List -->
+                        <div class="main-card p-4" id="ticketListCard">
+                            <h3 class="section-title"><i class="fa-solid fa-list-check text-primary me-2"></i>Support Tickets</h3>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Category</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ticketsTableBody">
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">No tickets opened.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Chat Area (Toggled dynamically when ticket clicked) -->
+                        <div class="d-none" id="ticketChatCard">
+                            <div class="chat-container">
+                                <div class="chat-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fa-solid fa-message text-primary me-2"></i>
+                                        <span id="chatTicketTitle">Ticket Subject</span>
+                                        <span class="badge bg-secondary ms-2" id="chatTicketStatus">OPEN</span>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary px-3" id="closeChatBtn">
+                                        <i class="fa-solid fa-arrow-left me-1"></i>Back
+                                    </button>
+                                </div>
+                                <div class="chat-messages d-flex flex-column" id="chatMessages">
+                                    <!-- Messages appended dynamically -->
+                                </div>
+                                <form class="chat-input-area d-flex gap-2" id="chatInputForm">
+                                    <input type="text" class="form-control" id="chatInputMessage" placeholder="Type message..." required autocomplete="off">
+                                    <button type="submit" class="btn btn-primary-custom m-0 px-4">
+                                        <i class="fa-solid fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: SETTINGS ======================= -->
+            <div class="pane-content" id="pane-settings">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <!-- Profile Settings -->
+                        <div class="main-card p-4">
+                            <h3 class="section-title"><i class="fa-solid fa-user-gear text-primary me-2"></i>Profile Settings</h3>
+                            
+                            <form id="settingsProfileForm">
+                                <div class="mb-4">
+                                    <label for="settingsNameInput" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="settingsNameInput" required placeholder="John Doe">
+                                </div>
+                                <button type="submit" class="btn btn-primary-custom w-100 m-0 py-2" id="saveProfileBtn">
+                                    <i class="fa-solid fa-check me-2"></i>Save Full Name
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <!-- Password settings -->
+                        <div class="main-card p-4">
+                            <h3 class="section-title"><i class="fa-solid fa-key text-primary me-2"></i>Change Security Password</h3>
+                            
+                            <form id="settingsPasswordForm">
+                                <div class="mb-3">
+                                    <label for="settingsPassword" class="form-label">New Password</label>
+                                    <div style="position: relative;">
+                                        <input type="password" class="form-control" id="settingsPassword" placeholder="Minimum 6 characters" minlength="6" required style="padding-right: 45px;">
+                                        <i class="fa-solid fa-eye-slash text-secondary toggle-pass-settings" data-target="settingsPassword" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="settingsPasswordConfirm" class="form-label">Confirm New Password</label>
+                                    <div style="position: relative;">
+                                        <input type="password" class="form-control" id="settingsPasswordConfirm" placeholder="Re-enter password" minlength="6" required style="padding-right: 45px;">
+                                        <i class="fa-solid fa-eye-slash text-secondary toggle-pass-settings" data-target="settingsPasswordConfirm" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary-custom w-100 m-0 py-2" id="savePasswordBtn">
+                                    <i class="fa-solid fa-shield-halved me-2"></i>Update Password
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

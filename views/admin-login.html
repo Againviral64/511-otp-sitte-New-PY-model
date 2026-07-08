@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Admin Login - Nova OTP Portal</title>
+    
+    <!-- Bootstrap, FontAwesome & Custom CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            color: #f1f5f9;
+        }
+        .admin-auth-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #334155;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 440px;
+        }
+        .portal-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .portal-icon {
+            font-size: 3rem;
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        .portal-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+        .form-control-dark {
+            background: #1e293b;
+            border: 2px solid #475569;
+            color: white;
+            padding: 0.85rem 1.15rem;
+            border-radius: var(--radius);
+            font-weight: 500;
+            transition: all 0.25s ease;
+        }
+        .form-control-dark:focus {
+            background: #0f172a;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+            color: white;
+        }
+        .btn-admin-submit {
+            background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+            color: white;
+            border: none;
+            font-weight: 700;
+            font-size: 1.05rem;
+            padding: 0.9rem 1.5rem;
+            border-radius: var(--radius);
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.35);
+            transition: all 0.25s ease;
+        }
+        .btn-admin-submit:hover {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(2, 132, 199, 0.5);
+            color: white;
+        }
+        .btn-admin-submit:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-auth-card">
+        <div class="portal-header">
+            <div class="portal-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <h1 class="portal-title">ADMINISTRATOR PORTAL</h1>
+            <p class="text-secondary small mt-1">Authorized Personnel Access Only</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <form id="adminLoginForm">
+            <div class="mb-3">
+                <label for="emailInput" class="form-label text-secondary fw-bold">Admin Email</label>
+                <input type="email" class="form-control-dark w-100" id="emailInput" placeholder="admin@domain.com" required autocomplete="email">
+            </div>
+
+            <div class="mb-4">
+                <label for="passwordInput" class="form-label text-secondary fw-bold">Secret Key / Password</label>
+                <div style="position: relative;">
+                    <input type="password" class="form-control-dark w-100" id="passwordInput" placeholder="Enter administrative password" required autocomplete="current-password" style="padding-right: 45px;">
+                    <i class="fa-solid fa-eye-slash text-secondary" id="togglePassword" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.1rem;"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-admin-submit" id="submitBtn">
+                <i class="fa-solid fa-lock-open me-2"></i>Authenticate Admin
+            </button>
+        </form>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('adminLoginForm');
+            const alertContainer = document.getElementById('alertContainer');
+            const submitBtn = document.getElementById('submitBtn');
+            const passwordInput = document.getElementById('passwordInput');
+            const togglePassword = document.getElementById('togglePassword');
+
+            function showAlert(message, type = 'danger') {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show border-0" role="alert" style="border-radius: var(--radius); background-color: ${type === 'danger' ? '#fca5a5' : '#86efac'}; color: ${type === 'danger' ? '#7f1d1d' : '#14532d'};">
+                        <div class="fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>${message}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="filter: invert(${type === 'danger' ? 0.3 : 0.8});"></button>
+                    </div>
+                `;
+            }
+
+            // Password view toggle
+            togglePassword.addEventListener('click', () => {
+                const isPass = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPass ? 'text' : 'password');
+                togglePassword.classList.toggle('fa-eye');
+                togglePassword.classList.toggle('fa-eye-slash');
+            });
+
+            // Fetch Auth config and connect
+            fetch('/api/auth/config')
+                .then(res => res.json())
+                .then(config => {
+                    if (!config.supabaseUrl || !config.supabaseKey) {
+                        throw new Error('Supabase configurations are missing.');
+                    }
+                    const supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const email = document.getElementById('emailInput').value.trim();
+                        const password = passwordInput.value;
+
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Validating...';
+
+                        // 1. Authenticate with Supabase Auth
+                        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+                        if (error) {
+                            showAlert(error.message, 'danger');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-lock-open me-2"></i>Authenticate Admin';
+                            return;
+                        }
+
+                        // 2. SUCCESSFUL AUTH - Now check if they exist in admin_profiles
+                        try {
+                            const { data: adminProfile, error: adminErr } = await supabaseClient
+                                .from('admin_profiles')
+                                .select('id')
+                                .eq('id', data.user.id)
+                                .maybeSingle();
+
+                            const { data: profile } = await supabaseClient
+                                .from('profiles')
+                                .select('role')
+                                .eq('id', data.user.id)
+                                .maybeSingle();
+
+                            const isAuthorizedAdmin = (adminProfile && adminProfile.id) || (profile && profile.role && profile.role.toLowerCase() === 'admin');
+
+                            if (isAuthorizedAdmin) {
+                                // Save administrative session token and redirect
+                                localStorage.setItem('nova_session_token', data.session.access_token);
+                                localStorage.setItem('nova_user_email', data.user.email);
+                                window.location.href = '/admin';
+                            } else {
+                                // Access Denied: User is registered but is not designated as Admin
+                                await supabaseClient.auth.signOut();
+                                localStorage.removeItem('nova_session_token');
+                                localStorage.removeItem('nova_user_email');
+                                showAlert('Access Denied: This account is not listed in authorized Admin Profiles.', 'danger');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fa-solid fa-lock-open me-2"></i>Authenticate Admin';
+                            }
+                        } catch (queryErr) {
+                            await supabaseClient.auth.signOut();
+                            localStorage.removeItem('nova_session_token');
+                            localStorage.removeItem('nova_user_email');
+                            showAlert('Database validation failed. Session terminated.', 'danger');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-lock-open me-2"></i>Authenticate Admin';
+                        }
+                    });
+                })
+                .catch(err => {
+                    showAlert(err.message, 'danger');
+                });
+        });
+    </script>
+</body>
+</html>

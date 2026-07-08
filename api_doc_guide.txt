@@ -1,0 +1,129 @@
+====================================================================
+               555API.COM DEVELOPER API REFERENCE GUIDE
+====================================================================
+
+This file provides reference documentation for the integrated 555api.com v1 API.
+
+API Base URL: https://555api.com
+Authentication: Add "?key=YOUR_API_TOKEN" to the request parameters.
+
+--------------------------------------------------------------------
+1. CHECK ACCOUNT BALANCE
+--------------------------------------------------------------------
+Endpoint: GET/POST /api/v1/info
+Request Parameters:
+  - key: Your API Token
+
+Response Format (Success):
+{
+  "code": 200,
+  "data": {
+    "id": 888,
+    "username": "zain14a",
+    "balance": "4.980"
+  },
+  "message": "OK"
+}
+
+--------------------------------------------------------------------
+2. GET ACTIVE PRODUCTS & STOCK
+--------------------------------------------------------------------
+Endpoint: GET/POST /api/v1/goods
+Request Parameters:
+  - key: Your API Token
+
+Response Format (Success):
+{
+  "code": 200,
+  "data": [
+    {
+      "group_id": 5,
+      "group_name": "美国实卡",
+      "list": [
+        {
+          "id": "337",
+          "name": "Telegram 纸飞机",
+          "unit_price": "0.700",
+          "stock": "1992",
+          "logo": "/image/ab.webp",
+          "tips": "...",
+          "conf_price": [],
+          "conf_voice": []
+        }
+      ]
+    }
+  ],
+  "message": "OK"
+}
+
+--------------------------------------------------------------------
+3. PURCHASE PHONE NUMBER
+--------------------------------------------------------------------
+Endpoint: GET/POST /api/v1/get
+Request Parameters:
+  - key: Your API Token
+  - id: Product ID (e.g. 337)
+  - num: Quantity (Use 1)
+  - time: Expiration type (1: 1-10 days, 2: 11-30 days, 3: 31-60 days, 4: 61-90 days)
+
+Response Format (Success):
+{
+  "code": 200,
+  "data": {
+    "sn": "2026010214**********",  // Order Serial Number
+    "number": [
+      "+12087541158"                  // Purchased Phone Number
+    ]
+  },
+  "message": "OK"
+}
+
+--------------------------------------------------------------------
+4. RETRIEVE DIRECT SMS CHECKING URL
+--------------------------------------------------------------------
+Endpoint: GET/POST /api/v1/order
+Request Parameters:
+  - key: Your API Token
+  - sn: Order Serial Number (e.g. 2026010214**********)
+
+Response Format (Success - Plain Text / Pipe Separated):
++12087541158|https://sms-555.com/5/cacgahaibidaceadm685r556ffvjluhn|2026-09-29
+
+*Note: The second item in this response is the direct link to poll for SMS codes.
+
+--------------------------------------------------------------------
+5. RETRIEVE CODE VIA GATEWAY (BACKUP CHECK)
+--------------------------------------------------------------------
+Endpoint: GET/POST /api/v1/msg
+Request Parameters:
+  - key: Your API Token
+  - id: Product ID
+  - number: Purchased Phone Number
+
+Response Format (Success):
+{
+  "code": 200,
+  "data": {
+    "time": "2026-01-02 16:59:51",
+    "msg": "[醒图] 验证码2840，用于手机验证码登录，5分钟内有效。",
+    "from": "+12087541158"
+  },
+  "message": "OK"
+}
+
+Response Format (Still Waiting):
+{
+  "code": 222,
+  "data": [],
+  "message": "No message"
+}
+
+====================================================================
+                      AUTOMATION FLOW SUMMARY
+====================================================================
+1. Dashboard loads -> Server queries `/api/v1/goods` -> Renders dynamic countries (groups) and services (products) with live stock.
+2. User buys -> Server calls `/api/v1/get` -> Receives SN and Phone Number.
+3. Server immediately calls `/api/v1/order?sn=SN` -> Receives direct link.
+4. Database saves the direct link (`sms_url`) and the Product ID.
+5. Poll Loop -> Server checks the direct link (bypassing Turnstile). If direct link fails, checks `/api/v1/msg` as backup.
+6. OTP parsed -> regex matches digits -> saved to Supabase -> page displays OTP.
