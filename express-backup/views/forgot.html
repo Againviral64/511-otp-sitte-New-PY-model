@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password - Nova OTP</title>
+    
+    <!-- Bootstrap, FontAwesome, Styles -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: var(--light);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .auth-card {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 420px;
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <a href="/" class="text-decoration-none">
+                <div class="auth-logo"><i class="fa-solid fa-square-rss me-2"></i>Nova OTP</div>
+            </a>
+            <h5 class="text-secondary fw-semibold">Reset your password</h5>
+            <p class="small text-muted mt-2">Enter your email and we'll send you a password recovery link.</p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <form id="forgotForm">
+            <div class="mb-4">
+                <label for="emailInput" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="emailInput" placeholder="name@example.com" required>
+            </div>
+
+            <button class="btn btn-primary-custom w-100 py-2 fs-6 m-0" type="submit" id="submitBtn">
+                <i class="fa-solid fa-paper-plane me-2"></i>Send Reset Link
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <a href="/login" class="fw-semibold text-decoration-none"><i class="fa-solid fa-arrow-left me-2"></i>Back to Sign In</a>
+        </div>
+    </div>
+
+    <!-- Supabase SDK & Reset Script -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('forgotForm');
+            const alertContainer = document.getElementById('alertContainer');
+            const submitBtn = document.getElementById('submitBtn');
+
+            function showAlert(message, type = 'danger') {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <div><i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} me-2"></i>${message}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
+
+            // Fetch Supabase client config
+            fetch('/api/auth/config')
+                .then(res => res.json())
+                .then(config => {
+                    if (!config.supabaseUrl || !config.supabaseKey) {
+                        throw new Error('Supabase configuration error.');
+                    }
+                    const supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const email = document.getElementById('emailInput').value.trim();
+
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+
+                        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                            redirectTo: window.location.origin + '/login'
+                        });
+
+                        if (error) {
+                            showAlert(error.message, 'danger');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i>Send Reset Link';
+                        } else {
+                            showAlert('Recovery instructions sent to your email successfully!', 'success');
+                            submitBtn.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i>Email Sent';
+                        }
+                    });
+                })
+                .catch(err => {
+                    showAlert(err.message, 'danger');
+                });
+        });
+    </script>
+</body>
+</html>

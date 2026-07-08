@@ -1,20 +1,24 @@
 {
-  "name": "sms-hub-otp-platform",
-  "version": "1.0.0",
-  "description": "Premium Responsive SMS OTP Activation Platform",
-  "main": "server.js",
+  "name": "temp-next",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.43.4",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "@supabase/supabase-js": "^2.110.1",
+    "dotenv": "^17.4.2",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "type": "module",
-  "private": true
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4"
+  }
 }

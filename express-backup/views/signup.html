@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Nova OTP Provider</title>
+    
+    <!-- Bootstrap & FontAwesome & Custom CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: var(--light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1.5rem;
+        }
+        .auth-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .auth-logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <div class="auth-header">
+            <a href="/" class="text-decoration-none">
+                <div class="auth-logo"><i class="fa-solid fa-square-rss me-2"></i>Nova OTP</div>
+            </a>
+            <h5 class="text-secondary fw-semibold">Create a new partner account</h5>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <form id="signupForm">
+            <div class="mb-3">
+                <label for="nameInput" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="nameInput" placeholder="e.g. John Doe" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="emailInput" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="emailInput" placeholder="name@example.com" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="passwordInput" class="form-label">Password</label>
+                <div style="position: relative;">
+                    <input type="password" class="form-control" id="passwordInput" placeholder="Minimum 6 characters" minlength="6" required style="padding-right: 45px;">
+                    <i class="fa-solid fa-eye-slash text-secondary toggle-pass" data-target="passwordInput" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.1rem;"></i>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="passwordConfirmInput" class="form-label">Confirm Password</label>
+                <div style="position: relative;">
+                    <input type="password" class="form-control" id="passwordConfirmInput" placeholder="Re-enter password" minlength="6" required style="padding-right: 45px;">
+                    <i class="fa-solid fa-eye-slash text-secondary toggle-pass" data-target="passwordConfirmInput" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 1.1rem;"></i>
+                </div>
+            </div>
+
+            <button class="btn btn-primary-custom w-100 py-2 fs-6 m-0 mb-3" type="submit" id="submitBtn">
+                <i class="fa-solid fa-user-plus me-2"></i>Register Account
+            </button>
+
+            <div class="d-flex align-items-center my-3">
+                <hr class="flex-grow-1 text-muted m-0">
+                <span class="mx-3 text-secondary small">or</span>
+                <hr class="flex-grow-1 text-muted m-0">
+            </div>
+
+            <button class="btn btn-outline-dark w-100 py-2 fs-6 m-0 d-flex align-items-center justify-content-center gap-2" type="button" id="googleBtn" style="border-radius: var(--radius); border-color: #dee2e6;">
+                <img src="https://lh3.googleusercontent.com/COxitfgDO1t3sAcocJwux5OcG134hh3ypSV3vyU1lqiW7utLI65e1AFLAHMu17a4FBU" alt="Google" style="width: 18px; height: 18px;">
+                Continue with Google
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <span class="text-secondary">Already have an account? </span>
+            <a href="/login" class="fw-semibold text-decoration-none">Sign In</a>
+        </div>
+    </div>
+
+    <!-- Supabase SDK & Custom Auth Logic -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('signupForm');
+            const alertContainer = document.getElementById('alertContainer');
+            const submitBtn = document.getElementById('submitBtn');
+
+            function showAlert(message, type = 'danger') {
+                alertContainer.innerHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <div><i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} me-2"></i>${message}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            }
+
+            // Setup Show/Hide Password toggles
+            document.querySelectorAll('.toggle-pass').forEach(icon => {
+                icon.addEventListener('click', () => {
+                    const inputId = icon.getAttribute('data-target');
+                    const inputField = document.getElementById(inputId);
+                    const isPassword = inputField.getAttribute('type') === 'password';
+                    inputField.setAttribute('type', isPassword ? 'text' : 'password');
+                    icon.classList.toggle('fa-eye');
+                    icon.classList.toggle('fa-eye-slash');
+                });
+            });
+
+            // Fetch config
+            fetch('/api/auth/config')
+                .then(res => res.json())
+                .then(config => {
+                    if (!config.supabaseUrl || !config.supabaseKey) {
+                        throw new Error('Supabase Client Config missing.');
+                    }
+
+                    const supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+
+                    // Handle Google Auth registration
+                    const googleBtn = document.getElementById('googleBtn');
+                    googleBtn.addEventListener('click', async () => {
+                        const { error } = await supabaseClient.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                                redirectTo: window.location.origin + '/dashboard'
+                            }
+                        });
+                        if (error) showAlert(error.message, 'danger');
+                    });
+
+                    // Handle Form Signup
+                    form.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const name = document.getElementById('nameInput').value.trim();
+                        const email = document.getElementById('emailInput').value.trim();
+                        const password = document.getElementById('passwordInput').value;
+                        const confirm = document.getElementById('passwordConfirmInput').value;
+
+                        if (password !== confirm) {
+                            showAlert('Passwords do not match.', 'danger');
+                            return;
+                        }
+
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Registering...';
+
+                        const { data, error } = await supabaseClient.auth.signUp({
+                            email,
+                            password,
+                            options: {
+                                data: {
+                                    name: name
+                                }
+                            }
+                        });
+
+                        if (error) {
+                            showAlert(error.message, 'danger');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="fa-solid fa-user-plus me-2"></i>Register Account';
+                        } else {
+                            showAlert('Registration successful! Please check your mailbox to confirm your email before signing in.', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 5000);
+                        }
+                    });
+                })
+                .catch(err => {
+                    showAlert(err.message, 'danger');
+                });
+        });
+    </script>
+</body>
+</html>
