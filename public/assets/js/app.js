@@ -460,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentOrderId = data.order_id;
                 numberDisplay.textContent = data.number;
                 orderIdDisplay.textContent = data.order_id;
-                orderStatusBadge.textContent = 'PENDING';
+                orderStatusBadge.textContent = 'Not Received';
                 orderStatusBadge.className = 'badge-custom badge-pending';
 
                 otpCodeDisplay.textContent = '------';
@@ -515,8 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     if (data.status === 'COMPLETED') {
                         stopIntervals();
-                        orderStatusBadge.textContent = 'COMPLETED';
-                        orderStatusBadge.className = 'badge-custom badge-success';
+                        orderStatusBadge.textContent = 'Done';
+                        orderStatusBadge.className = 'badge-custom badge-completed';
                         
                         otpCodeDisplay.textContent = data.otp;
                         copyOtpBtn.disabled = false;
@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleExpiration() {
         stopIntervals();
-        orderStatusBadge.textContent = 'EXPIRED';
+        orderStatusBadge.textContent = 'Expired';
         orderStatusBadge.className = 'badge-custom badge-expired';
         smsStatusContainer.className = 'sms-status-container';
         waitingSpinner.classList.add('d-none');
@@ -584,7 +584,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         lastHistoryData.forEach(o => {
             const tr = document.createElement('tr');
-            const sc = o.status === 'COMPLETED' ? 'badge-success' : (o.status === 'PENDING' ? 'badge-pending' : 'badge-expired');
+            const sc = o.status === 'COMPLETED' ? 'badge-completed' : (o.status === 'PENDING' ? 'badge-pending' : 'badge-expired');
+            let statusText = o.status;
+            if (o.status === 'PENDING') statusText = 'Not Received';
+            else if (o.status === 'COMPLETED') statusText = 'Done';
+            else if (o.status === 'EXPIRED') statusText = 'Expired';
+
             tr.innerHTML = `
                 <td><code>${o.order_id}</code></td>
                 <td>${o.service}</td>
@@ -592,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${formatPrice(parseFloat(o.price))}</td>
                 <td><code class="fs-6">${o.otp || '------'}</code></td>
                 <td class="small text-secondary">${o.formatted_time}</td>
-                <td><span class="badge-custom ${sc}">${o.status}</span></td>
+                <td><span class="badge-custom ${sc}">${statusText}</span></td>
             `;
             orderHistoryTableBody.appendChild(tr);
         });
