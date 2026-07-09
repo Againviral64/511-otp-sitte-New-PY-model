@@ -94,7 +94,7 @@ export async function GET(request) {
         }
 
         if (status === 'COMPLETED') {
-            const updatePayload = { status: 'COMPLETED', otp: otp };
+            const updatePayload = { status: 'COMPLETED', otp: smsText || otp };
             if (smsText) {
                 updatePayload.full_message = smsText;
                 updatePayload.received_at = new Date().toISOString();
@@ -107,13 +107,13 @@ export async function GET(request) {
                 if (error) {
                     await supabase
                         .from('orders')
-                        .update({ status: 'COMPLETED', otp: otp })
+                        .update({ status: 'COMPLETED', otp: smsText || otp })
                         .eq('order_id', order.order_id);
                 }
             } catch (e) {
                 await supabase
                     .from('orders')
-                    .update({ status: 'COMPLETED', otp: otp })
+                    .update({ status: 'COMPLETED', otp: smsText || otp })
                     .eq('order_id', order.order_id);
             }
 

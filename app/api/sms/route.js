@@ -108,15 +108,8 @@ export async function GET(request) {
         const isExpired = elapsedSec > 300;
 
         let finalOtpVal = orderRow.otp || '------';
-        if (foundOtp) {
-            if (!orderRow.otp || orderRow.otp === '------' || orderRow.otp === 'Not Received') {
-                finalOtpVal = foundOtp;
-            } else {
-                const existingOtps = orderRow.otp.split(',').map(x => x.trim());
-                if (!existingOtps.includes(foundOtp)) {
-                    finalOtpVal = orderRow.otp + ', ' + foundOtp;
-                }
-            }
+        if (fullMessage || foundOtp) {
+            finalOtpVal = fullMessage || foundOtp;
         }
 
         if (isExpired) {
