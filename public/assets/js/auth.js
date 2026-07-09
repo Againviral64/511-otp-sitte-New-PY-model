@@ -1,15 +1,15 @@
 // public/assets/js/auth.js
-document.addEventListener('DOMContentLoaded', () => {
-    // 0. Extract and store OAuth tokens from URL hash if returning from redirect
-    if (window.location.hash) {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        if (accessToken) {
-            localStorage.setItem('nova_session_token', accessToken);
-            window.history.replaceState(null, null, window.location.pathname);
-        }
+// 0. Extract and store OAuth tokens from URL hash immediately on script load to avoid race conditions
+if (window.location.hash) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    if (accessToken) {
+        localStorage.setItem('nova_session_token', accessToken);
+        window.history.replaceState(null, null, window.location.pathname);
     }
+}
 
+document.addEventListener('DOMContentLoaded', () => {
     const sessionToken = localStorage.getItem('nova_session_token');
     const userEmail = localStorage.getItem('nova_user_email');
     
