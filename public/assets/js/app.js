@@ -502,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
             body: JSON.stringify({ country, service })
         })
         .then(res => res.json())
+        .then(data => {
             if (data.success) {
                 currentOrderId = data.order_id;
                 
