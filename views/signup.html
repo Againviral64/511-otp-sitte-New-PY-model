@@ -160,7 +160,7 @@
                     form.addEventListener('submit', async (e) => {
                         e.preventDefault();
                         const name = document.getElementById('nameInput').value.trim();
-                        const email = document.getElementById('emailInput').value.trim();
+                        const email = document.getElementById('emailInput').value.trim().toLowerCase();
                         const password = document.getElementById('passwordInput').value;
                         const confirm = document.getElementById('passwordConfirmInput').value;
 

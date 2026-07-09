@@ -156,7 +156,7 @@
                     // 3. Handle Form Login
                     form.addEventListener('submit', async (e) => {
                         e.preventDefault();
-                        const email = document.getElementById('emailInput').value.trim();
+                        const email = document.getElementById('emailInput').value.trim().toLowerCase();
                         const password = document.getElementById('passwordInput').value;
 
                         submitBtn.disabled = true;
