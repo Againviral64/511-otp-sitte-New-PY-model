@@ -437,8 +437,10 @@
                                     <th>Phone Number</th>
                                     <th>Paid Rate</th>
                                     <th>OTP Code</th>
+                                    <th>Message</th>
                                     <th>Created At</th>
                                     <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="orderHistoryTableBody">
@@ -700,6 +702,31 @@
 
         </div>
     </main>
+
+    <!-- View Message Modal -->
+    <div class="modal fade" id="viewMessageModal" tabindex="-1" aria-labelledby="viewMessageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 16px; background-color: #ffffff;">
+                <div class="modal-header border-0 bg-light py-3 px-4" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <h5 class="modal-title fw-bold" id="viewMessageModalLabel">
+                        <i class="fa-solid fa-envelope text-primary me-2"></i>Full SMS Message
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded text-dark font-monospace text-wrap" id="modalMessageBody" style="font-size: 0.95rem; white-space: pre-wrap; word-break: break-all; border: 1px dashed #cbd5e1;">
+                        Loading message details...
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">Close</button>
+                    <button type="button" class="btn btn-primary-custom px-4 py-2 m-0" id="copyModalMessageBtn" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">
+                        <i class="fa-solid fa-copy me-2"></i>Copy SMS
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

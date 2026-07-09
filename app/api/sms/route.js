@@ -59,24 +59,28 @@ export async function GET(request) {
         }
 
         let foundOtp = null;
+        let fullMessage = null;
 
         if (isManualLink || targetSmsUrl) {
             const response = await makeRequest(targetSmsUrl);
             if (response && !response.toLowerCase().includes('no message') && !response.toLowerCase().includes('no sms')) {
+                fullMessage = response;
                 const parts = response.split('|');
-                foundOtp = parts[0].trim(); // Save the full SMS message!
+                if (parts.length > 1 && parts[0].trim().match(/^\d{4,8}$/)) {
+                    foundOtp = parts[0].trim();
+                } else {
+                    const match = response.match(/\b\d{4,8}\b/);
+                    foundOtp = match ? match[0] : null;
+                }
             }
         } else {
             if (isMock) {
                 const elapsed = (Date.now() - new Date(orderRow.created_at).getTime()) / 1000;
                 if (elapsed >= 10 && elapsed <= 300) {
-                    const simulatedOtp = `MOCK-CODE-${Math.floor(100000 + Math.random() * 900000)}`;
-                    if (!orderRow.otp || orderRow.otp === '------' || orderRow.otp === 'Not Received') {
+                    const simulatedOtp = `${Math.floor(100000 + Math.random() * 900000)}`;
+                    if (!orderRow.otp || orderRow.otp === '------' || orderRow.otp === 'Not Received' || orderRow.otp === 'Waiting...') {
                         foundOtp = simulatedOtp;
-                    } else {
-                        if (elapsed >= 40 && !orderRow.otp.includes(',')) {
-                            foundOtp = simulatedOtp;
-                        }
+                        fullMessage = `[Mock Service] Your verification code is ${simulatedOtp}. Do not share this code with anyone.`;
                     }
                 }
             } else {
@@ -89,7 +93,9 @@ export async function GET(request) {
                     try {
                         const json = JSON.parse(response);
                         if (json.code === 200 && json.data && json.data.msg) {
-                            foundOtp = json.data.msg; // Save the full message!
+                            fullMessage = json.data.msg;
+                            const match = json.data.msg.match(/\b\d{4,8}\b/);
+                            foundOtp = match ? match[0] : null;
                         }
                     } catch (e) {
                         // Fallthrough
@@ -114,14 +120,33 @@ export async function GET(request) {
         }
 
         if (isExpired) {
-            status = (finalOtpVal && finalOtpVal !== '------' && finalOtpVal !== 'Not Received') ? 'COMPLETED' : 'EXPIRED';
+            status = (finalOtpVal && finalOtpVal !== '------' && finalOtpVal !== 'Not Received' && finalOtpVal !== 'Waiting...') ? 'COMPLETED' : 'EXPIRED';
             if (finalOtpVal === '------') finalOtpVal = 'Not Received';
             
             if (!isMock && supabase) {
-                await supabase
-                    .from('orders')
-                    .update({ status: status, otp: finalOtpVal })
-                    .eq('order_id', order_id);
+                const updatePayload = { status: status, otp: finalOtpVal };
+                if (fullMessage) {
+                    updatePayload.full_message = fullMessage;
+                    updatePayload.received_at = new Date().toISOString();
+                }
+                try {
+                    const { error } = await supabase
+                        .from('orders')
+                        .update(updatePayload)
+                        .eq('order_id', order_id);
+                    
+                    if (error) {
+                        await supabase
+                            .from('orders')
+                            .update({ status: status, otp: finalOtpVal })
+                            .eq('order_id', order_id);
+                    }
+                } catch (e) {
+                    await supabase
+                        .from('orders')
+                        .update({ status: status, otp: finalOtpVal })
+                        .eq('order_id', order_id);
+                }
 
                 if (status === 'EXPIRED') {
                     const { data: profile } = await supabase
@@ -145,6 +170,10 @@ export async function GET(request) {
                 if (localIdx !== -1) {
                     mockOrders[localIdx].status = status;
                     mockOrders[localIdx].otp = finalOtpVal;
+                    if (fullMessage) {
+                        mockOrders[localIdx].full_message = fullMessage;
+                        mockOrders[localIdx].received_at = new Date().toISOString();
+                    }
                 }
             }
         } else {
@@ -152,21 +181,44 @@ export async function GET(request) {
             if (foundOtp) {
                 status = 'COMPLETED';
                 if (!isMock && supabase) {
-                    await supabase
-                        .from('orders')
-                        .update({ status: 'COMPLETED', otp: finalOtpVal })
-                        .eq('order_id', order_id);
+                    const updatePayload = { status: 'COMPLETED', otp: finalOtpVal };
+                    if (fullMessage) {
+                        updatePayload.full_message = fullMessage;
+                        updatePayload.received_at = new Date().toISOString();
+                    }
+                    try {
+                        const { error } = await supabase
+                            .from('orders')
+                            .update(updatePayload)
+                            .eq('order_id', order_id);
+                        
+                        if (error) {
+                            await supabase
+                                .from('orders')
+                                .update({ status: 'COMPLETED', otp: finalOtpVal })
+                                .eq('order_id', order_id);
+                        }
+                    } catch (e) {
+                        await supabase
+                            .from('orders')
+                            .update({ status: 'COMPLETED', otp: finalOtpVal })
+                            .eq('order_id', order_id);
+                    }
                 } else {
                     const localIdx = mockOrders.findIndex(o => o.order_id === order_id);
                     if (localIdx !== -1) {
                         mockOrders[localIdx].status = 'COMPLETED';
                         mockOrders[localIdx].otp = finalOtpVal;
+                        if (fullMessage) {
+                            mockOrders[localIdx].full_message = fullMessage;
+                            mockOrders[localIdx].received_at = new Date().toISOString();
+                        }
                     }
                 }
             }
         }
 
-        return NextResponse.json({ success: true, status, otp: finalOtpVal });
+        return NextResponse.json({ success: true, status, otp: finalOtpVal, full_message: fullMessage || orderRow.full_message || null });
     } catch (err) {
         return NextResponse.json({ success: false, message: err.message }, { status: 401 });
     }

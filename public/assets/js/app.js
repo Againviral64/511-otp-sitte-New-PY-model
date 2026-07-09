@@ -235,6 +235,83 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Click delegation listener for Order History Table
+        orderHistoryTableBody.addEventListener('click', (e) => {
+            const fetchBtn = e.target.closest('.btn-fetch-otp');
+            const viewMsgBtn = e.target.closest('.btn-view-msg');
+
+            if (fetchBtn) {
+                const orderId = fetchBtn.getAttribute('data-order-id');
+                fetchBtn.disabled = true;
+                const origHtml = fetchBtn.innerHTML;
+                fetchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Fetching...';
+
+                authFetch(`/api/sms?order_id=${encodeURIComponent(orderId)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.status === 'COMPLETED') {
+                                showAlert('OTP fetched successfully!', 'success');
+                            } else if (data.status === 'EXPIRED') {
+                                showAlert('Order has expired.', 'warning');
+                            } else {
+                                showAlert('No SMS/OTP code received yet. Please try again.', 'info');
+                            }
+                            // Reload history and profile statistics to update UI
+                            loadHistory();
+                            loadProfile();
+                        } else {
+                            showAlert(data.message || 'Failed to fetch OTP.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        showAlert('Error fetching OTP: ' + err.message, 'danger');
+                    })
+                    .finally(() => {
+                        fetchBtn.disabled = false;
+                        fetchBtn.innerHTML = origHtml;
+                    });
+            }
+
+            if (viewMsgBtn) {
+                const rawMsg = viewMsgBtn.getAttribute('data-msg');
+                const decodedMsg = decodeURIComponent(rawMsg);
+                
+                const modalBody = document.getElementById('modalMessageBody');
+                if (modalBody) {
+                    modalBody.textContent = decodedMsg;
+                }
+
+                const modalEl = document.getElementById('viewMessageModal');
+                if (modalEl) {
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+
+                    // Handle copying modal message to clipboard
+                    const copyBtn = document.getElementById('copyModalMessageBtn');
+                    if (copyBtn) {
+                        // Clear existing listeners
+                        const newCopyBtn = copyBtn.cloneNode(true);
+                        copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
+
+                        newCopyBtn.addEventListener('click', () => {
+                            navigator.clipboard.writeText(decodedMsg)
+                                .then(() => {
+                                    const origText = newCopyBtn.innerHTML;
+                                    newCopyBtn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Copied!';
+                                    setTimeout(() => {
+                                        newCopyBtn.innerHTML = origText;
+                                    }, 2000);
+                                })
+                                .catch(() => {
+                                    alert('Failed to copy text.');
+                                });
+                        });
+                    }
+                }
+            }
+        });
+
         // Deposit Guidelines changes
         depositMethod.addEventListener('change', () => {
             const method = depositMethod.value;
@@ -718,25 +795,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderHistoryTable() {
         orderHistoryTableBody.innerHTML = '';
         if (lastHistoryData.length === 0) {
-            orderHistoryTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No orders found.</td></tr>`;
+            orderHistoryTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No orders found.</td></tr>`;
             return;
         }
         lastHistoryData.forEach(o => {
             const tr = document.createElement('tr');
             const sc = o.status === 'COMPLETED' ? 'badge-completed' : (o.status === 'PENDING' ? 'badge-pending' : 'badge-expired');
             let statusText = o.status;
-            if (o.status === 'PENDING') statusText = 'Not Received';
+            if (o.status === 'PENDING') statusText = 'Pending';
             else if (o.status === 'COMPLETED') statusText = 'Done';
             else if (o.status === 'EXPIRED') statusText = 'Expired';
+
+            // OTP cell logic
+            const hasMsg = o.full_message && o.full_message.trim().length > 0;
+            const otpCodeMarkup = hasMsg 
+                ? `<code class="fs-6 fw-bold text-success">${o.otp || '------'}</code>` 
+                : `<span class="text-muted small">Waiting...</span>`;
+
+            // Message cell logic
+            const messageMarkup = hasMsg
+                ? `<button class="btn btn-sm btn-success px-3 py-1 btn-view-msg" data-msg="${encodeURIComponent(o.full_message)}"><i class="fa-solid fa-circle-check me-1"></i>Received</button>`
+                : `<button class="btn btn-sm btn-secondary opacity-75 px-3 py-1" disabled><i class="fa-regular fa-circle-question me-1"></i>Not Received</button>`;
+
+            // Action cell logic
+            const actionMarkup = o.status === 'PENDING'
+                ? `<button class="btn btn-sm btn-primary px-3 py-1 btn-fetch-otp" data-order-id="${o.order_id}"><i class="fa-solid fa-rotate-right me-1"></i>Fetch OTP</button>`
+                : `<button class="btn btn-sm btn-outline-secondary px-3 py-1" disabled>No Action</button>`;
 
             tr.innerHTML = `
                 <td><code>${o.order_id}</code></td>
                 <td>${o.service}</td>
                 <td><strong>${o.number}</strong></td>
                 <td>${formatPrice(parseFloat(o.price) / 278.50)}</td>
-                <td><code class="fs-6">${o.otp || '------'}</code></td>
+                <td>${otpCodeMarkup}</td>
+                <td>${messageMarkup}</td>
                 <td class="small text-secondary">${o.formatted_time}</td>
                 <td><span class="badge-custom ${sc}">${statusText}</span></td>
+                <td>${actionMarkup}</td>
             `;
             orderHistoryTableBody.appendChild(tr);
         });

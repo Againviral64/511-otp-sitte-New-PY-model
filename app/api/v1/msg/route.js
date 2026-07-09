@@ -94,10 +94,28 @@ export async function GET(request) {
         }
 
         if (status === 'COMPLETED') {
-            await supabase
-                .from('orders')
-                .update({ status: 'COMPLETED', otp: otp })
-                .eq('order_id', order.order_id);
+            const updatePayload = { status: 'COMPLETED', otp: otp };
+            if (smsText) {
+                updatePayload.full_message = smsText;
+                updatePayload.received_at = new Date().toISOString();
+            }
+            try {
+                const { error } = await supabase
+                    .from('orders')
+                    .update(updatePayload)
+                    .eq('order_id', order.order_id);
+                if (error) {
+                    await supabase
+                        .from('orders')
+                        .update({ status: 'COMPLETED', otp: otp })
+                        .eq('order_id', order.order_id);
+                }
+            } catch (e) {
+                await supabase
+                    .from('orders')
+                    .update({ status: 'COMPLETED', otp: otp })
+                    .eq('order_id', order.order_id);
+            }
 
             return NextResponse.json({
                 code: 200,
