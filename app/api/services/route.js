@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import supabase, { isMock, apiBase, apiToken, makeRequest, mockGroups, mockServices } from '@/lib/db';
 
+export const revalidate = 60; // Cache this route for 60 seconds to drastically improve dashboard loading speed
+
 export async function GET() {
     if (isMock || !supabase) {
         return NextResponse.json({
