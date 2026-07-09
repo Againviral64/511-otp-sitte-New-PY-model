@@ -937,9 +937,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateDepositInstructions(method) {
         if (!instructionsDetails) return;
         let html = `
-            <div class="mb-1"><strong>Bank Name:</strong> ${method.bank_name}</div>
-            <div class="mb-1"><strong>Account Title:</strong> ${method.account_title}</div>
-            <div class="mb-1"><strong>Account Number:</strong> ${method.account_number}</div>
+            <div class="mb-2"><strong>Bank Name:</strong> ${method.bank_name}</div>
+            <div class="mb-2"><strong>Account Title:</strong> ${method.account_title}</div>
+            <div class="mb-2 d-flex flex-wrap align-items-center">
+                <strong class="me-1">Account Number:</strong> 
+                <span class="font-monospace fw-bold text-dark px-2 py-1 rounded bg-light border" id="depositAccNum" style="font-size: 0.95rem;">${method.account_number}</span>
+                <button class="btn btn-sm btn-outline-primary ms-2 px-2 py-1 d-inline-flex align-items-center" onclick="copyDepositAccountNumber()" title="Copy Account Number" style="border-radius: 8px; font-size: 0.75rem; font-weight: 500;">
+                    <i class="fa-regular fa-copy me-1"></i>Copy
+                </button>
+            </div>
         `;
         if (method.instructions) {
             html += `<div class="mt-2 pt-2 border-top small text-secondary" style="white-space: pre-wrap;"><strong>Instructions:</strong><br>${method.instructions}</div>`;
@@ -947,6 +953,31 @@ document.addEventListener('DOMContentLoaded', () => {
         instructionsDetails.innerHTML = html;
         paymentInstructions.classList.remove('d-none');
     }
+
+    window.copyDepositAccountNumber = function() {
+        const accSpan = document.getElementById('depositAccNum');
+        if (!accSpan) return;
+        const text = accSpan.textContent.trim();
+        
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                const btn = document.querySelector('button[onclick="copyDepositAccountNumber()"]');
+                if (btn) {
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-circle-check text-success me-1"></i>Copied!';
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-success', 'text-white');
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.classList.add('btn-outline-primary');
+                        btn.classList.remove('btn-success', 'text-white');
+                    }, 2000);
+                }
+            })
+            .catch(err => {
+                console.error('Failed to copy account number:', err);
+            });
+    };
 
     function renderDepositsTable() {
         depositHistoryTableBody.innerHTML = '';
