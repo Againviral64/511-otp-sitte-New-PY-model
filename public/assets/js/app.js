@@ -403,6 +403,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    function updateDepositFormCurrencyLabels() {
+        const depositAmountLabel = document.getElementById('depositAmountLabel');
+        const depositAmountInput = document.getElementById('depositAmount');
+        if (depositAmountLabel && depositAmountInput) {
+            const selectedCurrency = currencySelector.value || 'PKR';
+            depositAmountLabel.textContent = `Amount (${selectedCurrency})`;
+            depositAmountInput.placeholder = `Enter Amount in ${selectedCurrency}`;
+        }
+    }
+
     function renderProfileDetails() {
         if (!lastProfileData) return;
 
@@ -410,6 +420,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (lastProfileData.currency && currencySelector.value !== lastProfileData.currency) {
             currencySelector.value = lastProfileData.currency;
         }
+
+        updateDepositFormCurrencyLabels();
 
         // Render Balance card (stored in database as PKR, formatPrice expects USD base)
         balanceAmount.textContent = formatPrice(parseFloat(lastProfileData.balance || 0) / 278.50);
@@ -860,10 +872,15 @@ document.addEventListener('DOMContentLoaded', () => {
         lastDepositData.forEach(d => {
             const tr = document.createElement('tr');
             const bc = d.status === 'APPROVED' ? 'bg-success' : (d.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-danger');
+            
+            const depCurrency = d.currency || 'USD';
+            const details = exchangeRates[depCurrency] || { symbol: '$' };
+            const formattedAmount = `${details.symbol}${parseFloat(d.amount).toFixed(2)}`;
+
             tr.innerHTML = `
                 <td><code>${d.tx_id}</code></td>
                 <td>${d.method}</td>
-                <td class="text-nowrap"><strong>${formatPrice(parseFloat(d.amount))}</strong></td>
+                <td class="text-nowrap"><strong>${formattedAmount}</strong></td>
                 <td class="small text-secondary text-nowrap">${new Date(d.created_at).toLocaleString()}</td>
                 <td><span class="badge ${bc}">${d.status}</span></td>
             `;
@@ -876,6 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const amount = parseFloat(depositAmount.value);
         const tx_id = depositTxId.value.trim();
         const screenshot_url = depositScreenshot.value.trim();
+        const currency = currencySelector.value || 'PKR';
 
         if (!method || isNaN(amount) || amount <= 0 || !tx_id) {
             showAlert('Please select method, enter valid amount, and type TxID.', 'warning');
@@ -888,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
         authFetch('/api/deposit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ method, amount, tx_id, screenshot_url })
+            body: JSON.stringify({ method, amount, tx_id, screenshot_url, currency })
         })
         .then(res => res.json())
         .then(data => {

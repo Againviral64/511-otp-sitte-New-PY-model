@@ -5,7 +5,7 @@ import { verifyAuth } from '@/lib/middleware';
 export async function POST(request) {
     try {
         const user = await verifyAuth(request);
-        const { method, amount, tx_id, screenshot_url } = await request.json();
+        const { method, amount, tx_id, screenshot_url, currency } = await request.json();
 
         if (!method || !amount || !tx_id) {
             return NextResponse.json({ success: false, message: 'Missing payment details.' });
@@ -18,6 +18,7 @@ export async function POST(request) {
                 user_email: user.email,
                 method,
                 amount: parseFloat(amount),
+                currency: currency || 'USD',
                 tx_id,
                 screenshot_url,
                 status: 'PENDING',
@@ -27,22 +28,39 @@ export async function POST(request) {
             return NextResponse.json({ success: true });
         }
 
-        const { error } = await supabase
-            .from('deposits')
-            .insert([{
-                user_id: user.id,
-                method,
-                amount: parseFloat(amount),
-                tx_id,
-                screenshot_url,
-                status: 'PENDING'
-            }]);
+        let insertErr;
+        try {
+            const { error } = await supabase
+                .from('deposits')
+                .insert([{
+                    user_id: user.id,
+                    method,
+                    amount: parseFloat(amount),
+                    currency: currency || 'USD',
+                    tx_id,
+                    screenshot_url,
+                    status: 'PENDING'
+                }]);
+            insertErr = error;
+        } catch (dbErr) {
+            const { error } = await supabase
+                .from('deposits')
+                .insert([{
+                    user_id: user.id,
+                    method,
+                    amount: parseFloat(amount),
+                    tx_id,
+                    screenshot_url,
+                    status: 'PENDING'
+                }]);
+            insertErr = error;
+        }
 
-        if (error) {
-            if (error.code === '23505') {
+        if (insertErr) {
+            if (insertErr.code === '23505') {
                 return NextResponse.json({ success: false, message: 'This Transaction ID (TxID) has already been submitted.' });
             }
-            return NextResponse.json({ success: false, message: error.message });
+            return NextResponse.json({ success: false, message: insertErr.message });
         }
 
         return NextResponse.json({ success: true });

@@ -41,8 +41,21 @@ export async function POST(request) {
                 .eq('id', dep.user_id)
                 .maybeSingle();
 
+            const exchangeRates = {
+                PKR: 278.50,
+                USD: 1.0,
+                INR: 83.40,
+                BDT: 117.20,
+                NPR: 133.50,
+                RUB: 88.30
+            };
+
+            const depositCurrency = dep.currency || 'USD';
+            const rate = exchangeRates[depositCurrency] || 1.0;
+            const pkrAmountToAdd = parseFloat(dep.amount) * (278.50 / rate);
+
             const currentBal = prof ? parseFloat(prof.balance) : 0.000;
-            const targetBal = currentBal + parseFloat(dep.amount);
+            const targetBal = currentBal + pkrAmountToAdd;
 
             const { error: profErr } = await supabase
                 .from('profiles')

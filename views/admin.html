@@ -782,7 +782,7 @@
                                         <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${d.user_id}</div>
                                     </td>
                                     <td><span class="badge bg-secondary font-monospace">${d.method}</span></td>
-                                    <td><strong>₨ ${parseFloat(d.amount).toFixed(2)}</strong></td>
+                                    <td><strong>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USD'}</strong></td>
                                     <td>
                                         <div>TxID: <code>${d.tx_id}</code></div>
                                         ${d.screenshot_url ? `<a href="${d.screenshot_url}" target="_blank" class="small text-decoration-none text-primary"><i class="fa-solid fa-image me-1"></i>View Attachment Proof</a>` : '<span class="text-muted small">No attachment</span>'}
@@ -819,7 +819,7 @@
                                         <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${d.user_id}</div>
                                     </td>
                                     <td><span class="badge bg-secondary font-monospace">${d.method}</span></td>
-                                    <td><strong>₨ ${parseFloat(d.amount).toFixed(2)}</strong></td>
+                                    <td><strong>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USD'}</strong></td>
                                     <td>
                                         <div>TxID: <code>${d.tx_id}</code></div>
                                         ${d.screenshot_url ? `<a href="${d.screenshot_url}" target="_blank" class="small text-decoration-none text-primary"><i class="fa-solid fa-image me-1"></i>View Proof</a>` : '<span class="text-muted small">No attachment</span>'}
