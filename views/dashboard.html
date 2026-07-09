@@ -483,13 +483,25 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="depositTxId" class="form-label">Transaction ID (TxID)</label>
-                                <input type="text" class="form-control" id="depositTxId" placeholder="e.g. 82730198273">
+                                <label for="depositTxId" class="form-label fw-semibold">Transaction ID (TxID)</label>
+                                <input type="text" class="form-control" id="depositTxId" placeholder="e.g. 82730198273" style="border-radius: 8px;">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block fw-semibold">Payment Proof Screenshot</label>
+                                <input type="file" id="depositProofFile" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp" style="border-radius: 8px;">
+                                <div class="form-text text-muted" style="font-size: 0.8rem;">Accepted formats: JPG, JPEG, PNG, WEBP (Max 5MB)</div>
+                                <div id="depositProofPreviewContainer" class="mt-2 d-none">
+                                    <div class="card p-2 bg-light border-0" style="border-radius: 10px;">
+                                        <div class="small text-secondary mb-1">Selected File: <strong id="depositProofFileName"></strong></div>
+                                        <img id="depositProofPreviewImg" src="" alt="Proof Preview" class="img-thumbnail" style="max-height: 150px; max-width: 100%; object-fit: contain; border-radius: 8px;">
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-4">
-                                <label for="depositScreenshot" class="form-label">Screenshot / Payment Note</label>
-                                <textarea class="form-control" id="depositScreenshot" rows="2" placeholder="Paste link or write receipts details..."></textarea>
+                                <label for="depositScreenshot" class="form-label fw-semibold">Payment Note (Optional)</label>
+                                <textarea class="form-control" id="depositScreenshot" rows="2" placeholder="Write any transaction details or receipts info..." style="border-radius: 8px;"></textarea>
                             </div>
 
                             <button class="btn btn-primary-custom m-0 w-100 py-2" id="submitDepositBtn">
@@ -508,13 +520,14 @@
                                             <th>TxID</th>
                                             <th>Method</th>
                                             <th>Amount</th>
+                                            <th>Proof</th>
                                             <th>Time</th>
                                             <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody id="depositHistoryTableBody">
                                         <tr>
-                                            <td colspan="5" class="text-center py-4 text-muted">No deposits made yet.</td>
+                                            <td colspan="6" class="text-center py-4 text-muted">No deposits made yet.</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -723,6 +736,26 @@
                     <button type="button" class="btn btn-primary-custom px-4 py-2 m-0" id="copyModalMessageBtn" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">
                         <i class="fa-solid fa-copy me-2"></i>Copy SMS
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Proof Modal -->
+    <div class="modal fade" id="viewProofModal" tabindex="-1" aria-labelledby="viewProofModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 16px; background-color: #ffffff;">
+                <div class="modal-header border-0 bg-light py-3 px-4" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <h5 class="modal-title fw-bold" id="viewProofModalLabel">
+                        <i class="fa-solid fa-image text-primary me-2"></i>Payment Proof Screenshot
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <img id="modalProofImg" src="" alt="Payment Proof" class="img-fluid rounded" style="max-height: 70vh; object-fit: contain; border: 1px solid #cbd5e1;">
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-secondary px-4 py-2 m-0" data-bs-dismiss="modal" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">Close</button>
                 </div>
             </div>
         </div>

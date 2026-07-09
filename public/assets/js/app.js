@@ -94,6 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const depositScreenshot = document.getElementById('depositScreenshot');
     const submitDepositBtn = document.getElementById('submitDepositBtn');
     const depositHistoryTableBody = document.getElementById('depositHistoryTableBody');
+    const depositProofFile = document.getElementById('depositProofFile');
+    const depositProofPreviewContainer = document.getElementById('depositProofPreviewContainer');
+    const depositProofFileName = document.getElementById('depositProofFileName');
+    const depositProofPreviewImg = document.getElementById('depositProofPreviewImg');
 
     // DOM Elements: Reseller API
     const apiKeyDisplay = document.getElementById('apiKeyDisplay');
@@ -320,6 +324,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 paymentInstructions.classList.remove('d-none');
             } else {
                 paymentInstructions.classList.add('d-none');
+            }
+        });
+
+        if (depositProofFile) {
+            depositProofFile.addEventListener('change', () => {
+                const file = depositProofFile.files[0];
+                if (!file) {
+                    depositProofPreviewContainer.classList.add('d-none');
+                    return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert('File is too large. Max size allowed is 5 MB.', 'warning');
+                    depositProofFile.value = '';
+                    depositProofPreviewContainer.classList.add('d-none');
+                    return;
+                }
+
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    showAlert('Invalid file type. Only JPG, JPEG, PNG, and WEBP formats are allowed.', 'warning');
+                    depositProofFile.value = '';
+                    depositProofPreviewContainer.classList.add('d-none');
+                    return;
+                }
+
+                depositProofFileName.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    depositProofPreviewImg.src = e.target.result;
+                    depositProofPreviewContainer.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        depositHistoryTableBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-view-proof');
+            if (btn) {
+                const path = btn.getAttribute('data-path');
+                viewProofScreenshot(path);
             }
         });
 
@@ -866,7 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderDepositsTable() {
         depositHistoryTableBody.innerHTML = '';
         if (lastDepositData.length === 0) {
-            depositHistoryTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No deposits made yet.</td></tr>`;
+            depositHistoryTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No deposits made yet.</td></tr>`;
             return;
         }
         lastDepositData.forEach(d => {
@@ -877,10 +922,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const details = exchangeRates[depCurrency] || { symbol: '$' };
             const formattedAmount = `${details.symbol}${parseFloat(d.amount).toFixed(2)}`;
 
+            const proofPath = d.proof_image || d.screenshot_url;
+            let proofHtml = '<span class="text-muted small">No Proof</span>';
+            if (proofPath && proofPath.trim() !== '') {
+                proofHtml = `
+                    <span class="text-success small fw-semibold">
+                        <i class="fa-solid fa-circle-check me-1"></i>Proof Attached
+                    </span>
+                    <button class="btn btn-sm btn-outline-primary ms-2 btn-view-proof" data-path="${proofPath}" style="padding: 1px 6px; font-size: 0.75rem; border-radius: 6px;">
+                        <i class="fa-solid fa-eye me-1"></i>Preview
+                    </button>
+                `;
+            }
+
             tr.innerHTML = `
                 <td><code>${d.tx_id}</code></td>
                 <td>${d.method}</td>
                 <td class="text-nowrap"><strong>${formattedAmount}</strong></td>
+                <td>${proofHtml}</td>
                 <td class="small text-secondary text-nowrap">${new Date(d.created_at).toLocaleString()}</td>
                 <td><span class="badge ${bc}">${d.status}</span></td>
             `;
@@ -888,12 +947,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function handleDepositSubmit() {
+    function viewProofScreenshot(path) {
+        if (!path) return;
+        authFetch(`/api/deposit/signed-url?path=${encodeURIComponent(path)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = new bootstrap.Modal(document.getElementById('viewProofModal'));
+                    document.getElementById('modalProofImg').src = data.signedUrl;
+                    modal.show();
+                } else {
+                    showAlert(data.message, 'danger');
+                }
+            })
+            .catch(err => {
+                showAlert('Failed to retrieve secure proof screenshot: ' + err.message, 'danger');
+            });
+    }
+
+    async function handleDepositSubmit() {
         const method = depositMethod.value;
         const amount = parseFloat(depositAmount.value);
         const tx_id = depositTxId.value.trim();
         const screenshot_url = depositScreenshot.value.trim();
         const currency = currencySelector.value || 'PKR';
+        const file = depositProofFile ? depositProofFile.files[0] : null;
 
         if (!method || isNaN(amount) || amount <= 0 || !tx_id) {
             showAlert('Please select method, enter valid amount, and type TxID.', 'warning');
@@ -903,10 +981,47 @@ document.addEventListener('DOMContentLoaded', () => {
         submitDepositBtn.disabled = true;
         submitDepositBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
 
+        let proof_image = null;
+
+        if (file) {
+            // Upload to Supabase Storage
+            try {
+                const config = await authFetch('/api/auth/config').then(res => res.json());
+                const supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+                
+                const fileExt = file.name.split('.').pop();
+                const uniqueDepId = `DEP-${Math.floor(100000 + Math.random() * 900000)}`;
+                const userId = lastProfileData?.id || 'unauthenticated';
+                const filePath = `${userId}/${uniqueDepId}/screenshot.${fileExt}`;
+
+                const { data, error: uploadErr } = await supabaseClient.storage
+                    .from('deposit-proofs')
+                    .upload(filePath, file);
+
+                if (uploadErr) {
+                    throw new Error('Supabase Storage Upload failed: ' + uploadErr.message);
+                }
+
+                proof_image = filePath;
+            } catch (err) {
+                showAlert(err.message, 'danger');
+                submitDepositBtn.disabled = false;
+                submitDepositBtn.innerHTML = '<i class="fa-solid fa-upload me-2"></i>Submit Deposit Request';
+                return;
+            }
+        }
+
         authFetch('/api/deposit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ method, amount, tx_id, screenshot_url, currency })
+            body: JSON.stringify({
+                method,
+                amount,
+                tx_id,
+                currency,
+                proof_image,
+                payment_note: screenshot_url
+            })
         })
         .then(res => res.json())
         .then(data => {
@@ -915,6 +1030,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 depositAmount.value = '';
                 depositTxId.value = '';
                 depositScreenshot.value = '';
+                if (depositProofFile) depositProofFile.value = '';
+                if (depositProofPreviewContainer) depositProofPreviewContainer.classList.add('d-none');
                 loadDeposits();
             } else {
                 showAlert(data.message, 'danger');

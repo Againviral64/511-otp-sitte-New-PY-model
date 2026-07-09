@@ -5,7 +5,7 @@ import { verifyAuth } from '@/lib/middleware';
 export async function POST(request) {
     try {
         const user = await verifyAuth(request);
-        const { method, amount, tx_id, screenshot_url, currency } = await request.json();
+        const { method, amount, tx_id, screenshot_url, currency, proof_image, payment_note } = await request.json();
 
         if (!method || !amount || !tx_id) {
             return NextResponse.json({ success: false, message: 'Missing payment details.' });
@@ -20,7 +20,9 @@ export async function POST(request) {
                 amount: parseFloat(amount),
                 currency: currency || 'USD',
                 tx_id,
-                screenshot_url,
+                screenshot_url: proof_image || screenshot_url || null,
+                proof_image: proof_image || null,
+                payment_note: payment_note || null,
                 status: 'PENDING',
                 created_at: new Date().toISOString()
             };
@@ -38,7 +40,9 @@ export async function POST(request) {
                     amount: parseFloat(amount),
                     currency: currency || 'USD',
                     tx_id,
-                    screenshot_url,
+                    screenshot_url: proof_image || screenshot_url || null,
+                    proof_image: proof_image || null,
+                    payment_note: payment_note || null,
                     status: 'PENDING'
                 }]);
             insertErr = error;
@@ -49,8 +53,9 @@ export async function POST(request) {
                     user_id: user.id,
                     method,
                     amount: parseFloat(amount),
+                    currency: currency || 'USD',
                     tx_id,
-                    screenshot_url,
+                    screenshot_url: proof_image || screenshot_url || null,
                     status: 'PENDING'
                 }]);
             insertErr = error;
