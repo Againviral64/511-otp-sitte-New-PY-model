@@ -126,12 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsPasswordForm = document.getElementById('settingsPasswordForm');
 
     // Payment Guidelines Config
-    const paymentAccounts = {
-        'Easypaisa': '<strong>Easypaisa Account:</strong><br>Number: 0314-5551234<br>Name: Zain Ali',
-        'Jazzcash': '<strong>Jazzcash Account:</strong><br>Number: 0300-9876543<br>Name: Zain Ali',
-        'Zindagi': '<strong>Zindagi App Wallet:</strong><br>Number: 0321-7654321<br>Name: Zain Ali',
-        'Bank': '<strong>Bank Account (PKR):</strong><br>Bank: Bank Alfalah<br>Account Number: 5502-9018-2012-9812<br>Title: Zain Ali'
-    };
+    let activeDepositMethods = [];
 
     // Initialize View
     init();
@@ -318,10 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Deposit Guidelines changes
         depositMethod.addEventListener('change', () => {
-            const method = depositMethod.value;
-            if (paymentAccounts[method]) {
-                instructionsDetails.innerHTML = paymentAccounts[method];
-                paymentInstructions.classList.remove('d-none');
+            const selectedVal = depositMethod.value;
+            const method = activeDepositMethods.find(m => m.method_name === selectedVal);
+            if (method) {
+                updateDepositInstructions(method);
             } else {
                 paymentInstructions.classList.add('d-none');
             }
@@ -906,6 +901,51 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderDepositsTable();
                 }
             });
+        
+        loadDepositMethods();
+    }
+
+    function loadDepositMethods() {
+        authFetch('/api/deposit/methods')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    activeDepositMethods = data.methods;
+                    renderDepositMethodsDropdown();
+                }
+            });
+    }
+
+    function renderDepositMethodsDropdown() {
+        if (!depositMethod) return;
+        depositMethod.innerHTML = '<option value="" selected disabled>Select Wallet / Bank</option>';
+        activeDepositMethods.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.method_name;
+            opt.textContent = m.method_name;
+            depositMethod.appendChild(opt);
+        });
+
+        if (activeDepositMethods.length === 1) {
+            depositMethod.value = activeDepositMethods[0].method_name;
+            updateDepositInstructions(activeDepositMethods[0]);
+        } else {
+            paymentInstructions.classList.add('d-none');
+        }
+    }
+
+    function updateDepositInstructions(method) {
+        if (!instructionsDetails) return;
+        let html = `
+            <div class="mb-1"><strong>Bank Name:</strong> ${method.bank_name}</div>
+            <div class="mb-1"><strong>Account Title:</strong> ${method.account_title}</div>
+            <div class="mb-1"><strong>Account Number:</strong> ${method.account_number}</div>
+        `;
+        if (method.instructions) {
+            html += `<div class="mt-2 pt-2 border-top small text-secondary" style="white-space: pre-wrap;"><strong>Instructions:</strong><br>${method.instructions}</div>`;
+        }
+        instructionsDetails.innerHTML = html;
+        paymentInstructions.classList.remove('d-none');
     }
 
     function renderDepositsTable() {

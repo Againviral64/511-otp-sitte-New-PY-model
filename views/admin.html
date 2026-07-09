@@ -169,6 +169,9 @@
             <button class="nav-link" id="tab-orders" data-bs-toggle="tab" data-bs-target="#pane-orders" type="button" role="tab">
                 <i class="fa-solid fa-clock-rotate-left me-2"></i>User Orders History
             </button>
+            <button class="nav-link" id="tab-deposit-methods" data-bs-toggle="tab" data-bs-target="#pane-deposit-methods" type="button" role="tab">
+                <i class="fa-solid fa-money-check-dollar me-2"></i>Deposit Methods
+            </button>
             <button class="nav-link" id="tab-settings" data-bs-toggle="tab" data-bs-target="#pane-settings" type="button" role="tab">
                 <i class="fa-solid fa-gears me-2"></i>System Settings
             </button>
@@ -537,6 +540,40 @@
                 </div>
             </div>
 
+            <!-- 4.5 DEPOSIT METHODS MANAGEMENT TAB -->
+            <div class="tab-pane fade" id="pane-deposit-methods" role="tabpanel">
+                <div class="main-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="card-title m-0"><i class="fa-solid fa-money-check-dollar text-primary me-2"></i>Deposit Methods</h3>
+                        <button class="btn btn-primary-custom px-4 py-2 m-0" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;" data-bs-toggle="modal" data-bs-target="#addDepositMethodModal">
+                            <i class="fa-solid fa-plus me-2"></i>Add Method
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Method Name</th>
+                                    <th>Bank Name</th>
+                                    <th>Account Title</th>
+                                    <th>Account Number</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminDepositMethodsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Loading deposit methods...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- 5. SYSTEM SETTINGS TAB -->
             <div class="tab-pane fade" id="pane-settings" role="tabpanel">
                 <div class="main-card p-4" style="max-width: 550px;">
@@ -609,6 +646,103 @@
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: var(--radius);">Cancel</button>
                     <button type="button" class="btn btn-primary px-4" id="savePriceModalBtn" style="border-radius: var(--radius);">Save Pricing</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Deposit Method Modal -->
+    <div class="modal fade" id="addDepositMethodModal" tabindex="-1" aria-labelledby="addDepositMethodModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 16px; background-color: #ffffff;">
+                <div class="modal-header border-0 bg-light py-3 px-4" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <h5 class="modal-title fw-bold" id="addDepositMethodModalLabel">
+                        <i class="fa-solid fa-plus text-primary me-2"></i>Add Deposit Method
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addDepositMethodForm">
+                        <div class="mb-3">
+                            <label for="addMethodName" class="form-label fw-bold">Method Name</label>
+                            <input type="text" class="form-control" id="addMethodName" placeholder="e.g. Easypaisa" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addBankName" class="form-label fw-bold">Bank Name</label>
+                            <input type="text" class="form-control" id="addBankName" placeholder="e.g. Easypaisa or Meezan Bank" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addAccountTitle" class="form-label fw-bold">Account Title</label>
+                            <input type="text" class="form-control" id="addAccountTitle" placeholder="e.g. Zain Ali" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addAccountNumber" class="form-label fw-bold">Account Number</label>
+                            <input type="text" class="form-control" id="addAccountNumber" placeholder="e.g. 03145551234" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addInstructions" class="form-label fw-bold">Instructions (Optional)</label>
+                            <textarea class="form-control" id="addInstructions" rows="3" placeholder="Write any guidelines or steps here..." style="border-radius: 8px;"></textarea>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="addIsActive" checked>
+                            <label class="form-check-label fw-bold" for="addIsActive">Active Method</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">Cancel</button>
+                    <button type="button" class="btn btn-primary-custom px-4 py-2 m-0" id="saveMethodBtn" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Save Method
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Deposit Method Modal -->
+    <div class="modal fade" id="editDepositMethodModal" tabindex="-1" aria-labelledby="editDepositMethodModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0" style="border-radius: 16px; background-color: #ffffff;">
+                <div class="modal-header border-0 bg-light py-3 px-4" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                    <h5 class="modal-title fw-bold" id="editDepositMethodModalLabel">
+                        <i class="fa-solid fa-pen text-primary me-2"></i>Edit Deposit Method
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="editDepositMethodForm">
+                        <input type="hidden" id="editMethodId">
+                        <div class="mb-3">
+                            <label for="editMethodName" class="form-label fw-bold">Method Name</label>
+                            <input type="text" class="form-control" id="editMethodName" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editBankName" class="form-label fw-bold">Bank Name</label>
+                            <input type="text" class="form-control" id="editBankName" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editAccountTitle" class="form-label fw-bold">Account Title</label>
+                            <input type="text" class="form-control" id="editAccountTitle" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editAccountNumber" class="form-label fw-bold">Account Number</label>
+                            <input type="text" class="form-control" id="editAccountNumber" required style="border-radius: 8px;">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editInstructions" class="form-label fw-bold">Instructions (Optional)</label>
+                            <textarea class="form-control" id="editInstructions" rows="3" style="border-radius: 8px;"></textarea>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="editIsActive">
+                            <label class="form-check-label fw-bold" for="editIsActive">Active Method</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-secondary px-4 py-2" data-bs-dismiss="modal" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">Cancel</button>
+                    <button type="button" class="btn btn-primary-custom px-4 py-2 m-0" id="updateMethodBtn" style="border-radius: 12px; font-weight: 500; font-size: 0.9rem;">
+                        <i class="fa-solid fa-arrows-rotate me-2"></i>Update Method
+                    </button>
                 </div>
             </div>
         </div>
@@ -1016,6 +1150,9 @@
                             }
                         }
                     });
+
+                // Fetch deposit methods
+                loadAdminDepositMethods();
             }
 
             // Render/Filter Pricing table
@@ -1478,6 +1615,192 @@
                     loadAdminData();
                 });
             }
+
+            // Deposit Methods Management
+            const adminDepositMethodsTableBody = document.getElementById('adminDepositMethodsTableBody');
+            const saveMethodBtn = document.getElementById('saveMethodBtn');
+            const updateMethodBtn = document.getElementById('updateMethodBtn');
+            let loadedDepositMethods = [];
+
+            window.loadAdminDepositMethods = function() {
+                if (!adminDepositMethodsTableBody) return;
+                fetch('/api/admin/deposit-methods', { headers })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            loadedDepositMethods = data.methods;
+                            renderAdminDepositMethods();
+                        } else {
+                            adminDepositMethodsTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">${data.message || 'Failed to load'}</td></tr>`;
+                        }
+                    })
+                    .catch(err => {
+                        adminDepositMethodsTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger">Connection error: ${err.message}</td></tr>`;
+                    });
+            };
+
+            function renderAdminDepositMethods() {
+                adminDepositMethodsTableBody.innerHTML = '';
+                if (loadedDepositMethods.length === 0) {
+                    adminDepositMethodsTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No deposit methods configured.</td></tr>`;
+                    return;
+                }
+                loadedDepositMethods.forEach(m => {
+                    const tr = document.createElement('tr');
+                    const statusBadge = m.is_active 
+                        ? '<span class="badge bg-success">Active</span>' 
+                        : '<span class="badge bg-secondary">Inactive</span>';
+                    tr.innerHTML = `
+                        <td><strong>${m.method_name}</strong></td>
+                        <td>${m.bank_name}</td>
+                        <td>${m.account_title}</td>
+                        <td><code>${m.account_number}</code></td>
+                        <td>${statusBadge}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editDepositMethod('${m.id}')" style="border-radius: 6px;"><i class="fa-solid fa-edit"></i> Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDepositMethod('${m.id}')" style="border-radius: 6px;"><i class="fa-solid fa-trash-can"></i> Delete</button>
+                        </td>
+                    `;
+                    adminDepositMethodsTableBody.appendChild(tr);
+                });
+            }
+
+            if (saveMethodBtn) {
+                saveMethodBtn.addEventListener('click', () => {
+                    const method_name = document.getElementById('addMethodName').value.trim();
+                    const bank_name = document.getElementById('addBankName').value.trim();
+                    const account_title = document.getElementById('addAccountTitle').value.trim();
+                    const account_number = document.getElementById('addAccountNumber').value.trim();
+                    const instructions = document.getElementById('addInstructions').value.trim();
+                    const is_active = document.getElementById('addIsActive').checked;
+
+                    if (!method_name || !bank_name || !account_title || !account_number) {
+                        alert('Please fill out all required fields.');
+                        return;
+                    }
+
+                    saveMethodBtn.disabled = true;
+                    saveMethodBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                    fetch('/api/admin/deposit-methods', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + sessionToken
+                        },
+                        body: JSON.stringify({ method_name, bank_name, account_title, account_number, instructions, is_active })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        saveMethodBtn.disabled = false;
+                        saveMethodBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Method';
+                        if (data.success) {
+                            showAlert('Deposit method successfully added!', 'success');
+                            document.getElementById('addDepositMethodForm').reset();
+                            
+                            // Hide modal
+                            const modalEl = document.getElementById('addDepositMethodModal');
+                            const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            modalInstance.hide();
+                            
+                            loadAdminDepositMethods();
+                        } else {
+                            showAlert(data.message || 'Failed to save method.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        saveMethodBtn.disabled = false;
+                        saveMethodBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Method';
+                        showAlert('Error adding method: ' + err.message, 'danger');
+                    });
+                });
+            }
+
+            window.editDepositMethod = function(id) {
+                const method = loadedDepositMethods.find(m => m.id == id);
+                if (!method) return;
+                document.getElementById('editMethodId').value = method.id;
+                document.getElementById('editMethodName').value = method.method_name;
+                document.getElementById('editBankName').value = method.bank_name;
+                document.getElementById('editAccountTitle').value = method.account_title;
+                document.getElementById('editAccountNumber').value = method.account_number;
+                document.getElementById('editInstructions').value = method.instructions || '';
+                document.getElementById('editIsActive').checked = !!method.is_active;
+
+                const editModal = new bootstrap.Modal(document.getElementById('editDepositMethodModal'));
+                editModal.show();
+            };
+
+            if (updateMethodBtn) {
+                updateMethodBtn.addEventListener('click', () => {
+                    const id = document.getElementById('editMethodId').value;
+                    const method_name = document.getElementById('editMethodName').value.trim();
+                    const bank_name = document.getElementById('editBankName').value.trim();
+                    const account_title = document.getElementById('editAccountTitle').value.trim();
+                    const account_number = document.getElementById('editAccountNumber').value.trim();
+                    const instructions = document.getElementById('editInstructions').value.trim();
+                    const is_active = document.getElementById('editIsActive').checked;
+
+                    if (!id || !method_name || !bank_name || !account_title || !account_number) {
+                        alert('Please fill out all required fields.');
+                        return;
+                    }
+
+                    updateMethodBtn.disabled = true;
+                    updateMethodBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+
+                    fetch('/api/admin/deposit-methods/action', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + sessionToken
+                        },
+                        body: JSON.stringify({ id, method_name, bank_name, account_title, account_number, instructions, is_active })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        updateMethodBtn.disabled = false;
+                        updateMethodBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate me-2"></i>Update Method';
+                        if (data.success) {
+                            showAlert('Deposit method successfully updated!', 'success');
+                            
+                            // Hide modal
+                            const modalEl = document.getElementById('editDepositMethodModal');
+                            const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                            modalInstance.hide();
+                            
+                            loadAdminDepositMethods();
+                        } else {
+                            showAlert(data.message || 'Failed to update method.', 'danger');
+                        }
+                    })
+                    .catch(err => {
+                        updateMethodBtn.disabled = false;
+                        updateMethodBtn.innerHTML = '<i class="fa-solid fa-arrows-rotate me-2"></i>Update Method';
+                        showAlert('Error updating method: ' + err.message, 'danger');
+                    });
+                });
+            }
+
+            window.deleteDepositMethod = function(id) {
+                if (!confirm('Are you sure you want to permanently delete this deposit method?')) return;
+                fetch(`/api/admin/deposit-methods/action?id=${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + sessionToken }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('Deposit method successfully deleted!', 'success');
+                        loadAdminDepositMethods();
+                    } else {
+                        showAlert(data.message || 'Failed to delete method.', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showAlert('Error deleting method: ' + err.message, 'danger');
+                });
+            };
 
             // 7. Verify Admin Identity on Load
             const headers = { 'Authorization': 'Bearer ' + sessionToken };
