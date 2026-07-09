@@ -621,7 +621,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const sessionToken = localStorage.getItem('nova_session_token');
             if (!sessionToken) {
-                window.location.href = '/admin-login.html';
+                window.location.href = '/admin-login';
                 return;
             }
 
@@ -1426,12 +1426,12 @@
                         alert('Access Denied: Admin authorization required.');
                         localStorage.removeItem('nova_session_token');
                         localStorage.removeItem('nova_user_email');
-                        window.location.href = '/admin-login.html';
+                        window.location.href = '/admin-login';
                     }
                 })
                 .catch(err => {
                     console.error('Session verification failed:', err);
-                    window.location.href = '/admin-login.html';
+                    window.location.href = '/admin-login';
                 });
         });
     </script>
