@@ -161,3 +161,20 @@ SELECT
    JOIN public.services s ON o.product_id = s.service_id
    WHERE o.status = 'COMPLETED') as cost_lifetime;
 
+-- 12. Create whatsapp_settings table
+CREATE TABLE IF NOT EXISTS public.whatsapp_settings (
+  id INT PRIMARY KEY DEFAULT 1,
+  whatsapp_number VARCHAR(50) NOT NULL,
+  default_message TEXT NOT NULL,
+  is_enabled BOOLEAN DEFAULT true NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  CONSTRAINT single_row CHECK (id = 1)
+);
+
+ALTER TABLE public.whatsapp_settings DISABLE ROW LEVEL SECURITY;
+
+-- Seed default values if no record exists
+INSERT INTO public.whatsapp_settings (id, whatsapp_number, default_message, is_enabled)
+VALUES (1, '923001234567', 'Hello Nova OTP Team,
+I need assistance regarding my account.', true)
+ON CONFLICT (id) DO NOTHING;

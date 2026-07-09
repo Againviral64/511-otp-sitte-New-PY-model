@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadHistory();
         loadDeposits();
         loadTickets();
+        loadWhatsappSupport();
         setupEventListeners();
     }
 
@@ -1513,5 +1514,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-shield-halved me-2"></i>Update Password';
+    }
+
+    function loadWhatsappSupport() {
+        authFetch('/api/user/whatsapp')
+            .then(res => res.json())
+            .then(data => {
+                const btn = document.getElementById('whatsapp-floating-btn');
+                if (!btn) return;
+                if (data.success && data.is_enabled && data.whatsapp_number) {
+                    const encodedMsg = encodeURIComponent(data.default_message || '');
+                    btn.href = `https://wa.me/${data.whatsapp_number}?text=${encodedMsg}`;
+                    btn.classList.remove('d-none');
+                } else {
+                    btn.classList.add('d-none');
+                }
+            })
+            .catch(err => {
+                console.error('Failed to load WhatsApp support configuration:', err);
+                const btn = document.getElementById('whatsapp-floating-btn');
+                if (btn) btn.classList.add('d-none');
+            });
     }
 });
