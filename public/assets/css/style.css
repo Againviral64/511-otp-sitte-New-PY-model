@@ -2,11 +2,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary: #0052cc;
-    --primary-light: #e6f0ff;
-    --primary-dark: #003d99;
-    --primary-gradient: linear-gradient(135deg, #0052cc 0%, #003d99 100%);
-    --secondary: #00b3ff;
+    --primary: #2563eb;
+    --primary-light: #dbeafe;
+    --primary-dark: #1d4ed8;
+    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    --secondary: #0ea5e9;
     --success: #22c55e;
     --success-light: #f0fdf4;
     --warning: #f59e0b;
@@ -15,16 +15,16 @@
     --dark: #0f172a;
     --light: #f8fafc;
     --border: #e2e8f0;
-    --shadow-sm: 0 2px 8px rgba(0, 82, 204, 0.04);
-    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 12px 40px rgba(0, 82, 204, 0.08);
+    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
     --font: 'Inter', sans-serif;
     --radius: 12px;
     --radius-lg: 20px;
 }
 
 body {
-    background-color: #f6f8fc;
+    background-color: #f1f5f9;
     color: var(--dark);
     font-family: var(--font);
     -webkit-font-smoothing: antialiased;
@@ -76,12 +76,14 @@ body {
 
 /* Card Styling */
 .main-card {
-    background: #ffffff;
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     padding: 2rem;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     height: 100%;
 }
 

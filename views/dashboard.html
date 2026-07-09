@@ -143,6 +143,39 @@
             display: block;
         }
         
+        /* Mobile Responsiveness */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 95;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .workspace {
+                margin-left: 0;
+            }
+            .workspace-header {
+                padding: 1rem;
+            }
+            .workspace-content {
+                padding: 1rem;
+            }
+            .page-title {
+                font-size: 1.25rem;
+            }
+        }
+        
         /* Services table search design */
         .search-box {
             position: relative;
@@ -265,11 +298,18 @@
         </div>
     </aside>
 
-    <!-- Main Workspace Area -->
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Main Workspace -->
     <main class="workspace">
-        <!-- Top Workspace Header -->
-        <header class="workspace-header">
-            <h1 class="page-title" id="paneTitle">Get SMS Activation</h1>
+        <div class="workspace-header">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-light d-md-none border" id="mobileMenuBtn" style="border-radius: var(--radius);">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h1 class="page-title" id="paneTitle">Dashboard</h1>
+            </div>
             
             <div class="d-flex align-items-center gap-3">
                 <!-- Currency Selector -->
@@ -401,24 +441,30 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>App Name</th>
-                                    <th>Category Group</th>
-                                    <th>Product ID</th>
-                                    <th>Price</th>
-                                    <th>Stock Status</th>
-                                    <th class="text-end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="servicesTableBody">
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">Loading services list...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>App Service</th>
+                                        <th>Category/Group</th>
+                                        <th>Service ID</th>
+                                        <th>Your Price</th>
+                                        <th>Stock</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="servicesTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <div class="spinner-border text-primary" role="status">
+                                              <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -428,25 +474,29 @@
                 <div class="main-card p-4">
                     <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>My Orders Log</h3>
                     
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>Service</th>
-                                    <th>Phone Number</th>
-                                    <th>Paid Rate</th>
-                                    <th>OTP Code</th>
-                                    <th>Created At</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderHistoryTableBody">
-                                <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted">Loading order history...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-custom align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Service</th>
+                                        <th>Number</th>
+                                        <th>Price</th>
+                                        <th>Status</th>
+                                        <th>Received SMS</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderHistoryTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <div class="spinner-border text-primary" role="status"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -500,23 +550,25 @@
                         <div class="main-card p-4">
                             <h3 class="section-title"><i class="fa-solid fa-clock text-primary me-2"></i>Deposit History</h3>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>TxID</th>
-                                            <th>Method</th>
-                                            <th>Amount</th>
-                                            <th>Time</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="depositHistoryTableBody">
-                                        <tr>
-                                            <td colspan="5" class="text-center py-4 text-muted">No deposits made yet.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                                    <table class="table table-custom align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>Reference ID</th>
+                                                <th>Amount ($)</th>
+                                                <th>Method</th>
+                                                <th>Status</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="depositHistoryTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4 text-muted">
+                                                    <div class="spinner-border text-primary" role="status"></div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                         </div>
                     </div>
                 </div>

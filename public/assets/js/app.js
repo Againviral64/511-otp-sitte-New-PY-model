@@ -142,6 +142,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupEventListeners() {
+        // Mobile Sidebar Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        if (mobileMenuBtn && sidebar && sidebarOverlay) {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                sidebarOverlay.classList.toggle('active');
+            });
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+                sidebarOverlay.classList.remove('active');
+            });
+        }
+
         // Sidebar Navigation click router
         sidebarLinks.forEach(link => {
             link.addEventListener('click', (e) => {
@@ -160,6 +176,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update Header Pane Title Text
                 paneTitle.textContent = link.textContent.trim();
                 alertContainer.innerHTML = ''; // Clear alerts on switch
+
+                // Close sidebar on mobile after clicking
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    sidebarOverlay.classList.remove('active');
+                }
             });
         });
 

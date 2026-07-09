@@ -125,6 +125,32 @@
             padding: 1rem;
             vertical-align: middle;
         }
+        
+        /* Mobile Responsiveness for Admin Panel */
+        @media (max-width: 768px) {
+            .nav-tabs-custom {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 5px;
+                margin-bottom: 1rem;
+            }
+            .nav-tabs-custom .nav-link {
+                white-space: nowrap;
+            }
+            .admin-header .container {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start !important;
+            }
+            .admin-header .d-flex.align-items-center.gap-3 {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .action-card {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-light">
