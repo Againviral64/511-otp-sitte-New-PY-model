@@ -594,11 +594,12 @@
                                     <th>Price (USD)</th>
                                     <th>Verification Status</th>
                                     <th>Created At</th>
+                                    <th>Code URL</th>
                                 </tr>
                             </thead>
                             <tbody id="adminOrdersTableBody">
                                 <tr>
-                                    <td colspan="8" class="text-center py-5 text-muted">
+                                    <td colspan="9" class="text-center py-5 text-muted">
                                         <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Querying order history log...
                                     </td>
                                 </tr>
@@ -1273,7 +1274,7 @@
                         if (data.success) {
                             ordersTable.innerHTML = '';
                             if (data.orders.length === 0) {
-                                ordersTable.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No orders found.</td></tr>`;
+                                ordersTable.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No orders found.</td></tr>`;
                                 return;
                             }
                             data.orders.forEach(o => {
@@ -1291,8 +1292,18 @@
                                     <td><strong>${o.number}</strong></td>
                                     <td><code class="fs-6 text-primary">${o.otp || '------'}</code></td>
                                     <td>${formatOrderPrice(o.price)}</td>
-                                    <td><span class="status-badge ${statusClass}">${o.status}</span></td>
+                                    <td>
+                                        <span class="status-badge ${statusClass}">${o.status}</span>
+                                        ${(o.status === 'PENDING' || o.status === 'EXPIRED') ? `
+                                            <button class="btn btn-sm btn-danger ms-2 px-2 py-0" onclick="confirmRefundOrder('${o.order_id}')" style="font-size: 0.75rem; border-radius: 6px;"><i class="fa-solid fa-undo me-1"></i>Refund</button>
+                                        ` : ''}
+                                    </td>
                                     <td class="small text-secondary" style="font-size:0.75rem;">${new Date(o.created_at).toLocaleString()}</td>
+                                    <td>
+                                        ${o.sms_url 
+                                            ? `<button class="btn btn-sm btn-outline-primary" onclick="window.open('${o.sms_url}', '_blank')" style="font-size: 0.75rem; border-radius: 6px;">🔗 Code URL</button>`
+                                            : `<span class="text-muted small" style="font-size: 0.75rem;">No URL Available</span>`}
+                                    </td>
                                 `;
                                 ordersTable.appendChild(tr);
                             });
@@ -2418,6 +2429,30 @@
                 })
                 .catch(err => {
                     showAlert('Error deleting method: ' + err.message, 'danger');
+                });
+            };
+
+            window.confirmRefundOrder = function(orderId) {
+                if (!confirm("Are you sure you want to refund this order?\n\nThis action cannot be undone.")) return;
+                fetch('/api/admin/refund', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + sessionToken
+                    },
+                    body: JSON.stringify({ order_id: orderId })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('Order has been successfully refunded!', 'success');
+                        loadAdminData(); // Refresh overview statistics and orders log
+                    } else {
+                        showAlert(data.message || 'Refund failed.', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showAlert('Error performing refund: ' + err.message, 'danger');
                 });
             };
 

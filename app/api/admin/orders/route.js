@@ -26,6 +26,7 @@ export async function GET(request) {
                 otp,
                 status,
                 price,
+                sms_url,
                 created_at,
                 profiles (
                     email
@@ -60,8 +61,9 @@ export async function GET(request) {
             service: o.service,
             number: o.number,
             otp: o.otp,
-            status: o.status,
+            status: o.status === 'CANCELLED' ? 'REFUNDED' : o.status,
             price: o.price,
+            sms_url: o.sms_url,
             created_at: o.created_at,
             user_email: o.profiles ? o.profiles.email : 'Unknown'
         }));

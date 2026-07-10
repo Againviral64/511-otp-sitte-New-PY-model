@@ -15,6 +15,7 @@ export async function GET(request) {
             const paginated = userMockOrders.slice(offset, offset + limit);
             const formatted = paginated.map(o => ({
                 ...o,
+                status: o.status === 'CANCELLED' ? 'REFUNDED' : o.status,
                 formatted_time: new Date(o.created_at).toLocaleString()
             }));
             return NextResponse.json({ success: true, orders: formatted, page, total: userMockOrders.length });
@@ -33,6 +34,7 @@ export async function GET(request) {
 
         const formatted = data.map(o => ({
             ...o,
+            status: o.status === 'CANCELLED' ? 'REFUNDED' : o.status,
             formatted_time: new Date(o.created_at).toLocaleString()
         }));
 

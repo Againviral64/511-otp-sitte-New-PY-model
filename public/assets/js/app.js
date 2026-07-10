@@ -304,31 +304,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 const origHtml = fetchBtn.innerHTML;
                 fetchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Fetching...';
 
-                authFetch(`/api/sms?order_id=${encodeURIComponent(orderId)}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            if (data.status === 'COMPLETED') {
-                                showAlert('OTP fetched successfully!', 'success');
-                            } else if (data.status === 'EXPIRED') {
-                                showAlert('Order has expired.', 'warning');
-                            } else {
-                                showAlert('No SMS/OTP code received yet. Please try again.', 'info');
-                            }
-                            // Reload history and profile statistics to update UI
-                            loadHistory();
-                            loadProfile();
-                        } else {
-                            showAlert(data.message || 'Failed to fetch OTP.', 'danger');
+                authFetch('/api/buy/fetch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderId })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const o = data.order;
+                        currentOrderId = o.order_id;
+                        
+                        let formattedNumber = o.number;
+                        if (formattedNumber && !formattedNumber.startsWith('+')) {
+                            formattedNumber = '+' + formattedNumber;
                         }
-                    })
-                    .catch(err => {
-                        showAlert('Error fetching OTP: ' + err.message, 'danger');
-                    })
-                    .finally(() => {
-                        fetchBtn.disabled = false;
-                        fetchBtn.innerHTML = origHtml;
-                    });
+                        numberDisplay.textContent = formattedNumber;
+                        numberDisplay.style.cursor = 'pointer';
+                        
+                        orderIdDisplay.textContent = o.order_id;
+                        orderStatusBadge.textContent = 'Not Received';
+                        orderStatusBadge.className = 'badge-custom badge-pending';
+
+                        setOtpDisplayValue('------');
+                        copyOtpBtn.disabled = true;
+                        endActivationBtn.style.display = 'block';
+                        smsStatusContainer.className = 'sms-status-container glow-pending';
+
+                        waitingSpinner.classList.remove('d-none');
+                        waitingStatusText.textContent = `Waiting for SMS (Expires in ${window.otpExpiryMinutes || 5}:00)...`;
+
+                        // Switch active pane to otp
+                        document.querySelectorAll('.pane-content').forEach(pane => pane.classList.remove('active'));
+                        document.getElementById('pane-otp').classList.add('active');
+                        document.querySelectorAll('.sidebar-link, .mobile-nav-link').forEach(l => {
+                            if (l.getAttribute('data-pane') === 'otp') {
+                                l.classList.add('active');
+                            } else {
+                                l.classList.remove('active');
+                            }
+                        });
+                        const paneTitle = document.getElementById('paneTitle');
+                        if (paneTitle) paneTitle.textContent = 'Get SMS Activation';
+
+                        // Close sidebar drawer on mobile after redirection
+                        if (window.innerWidth <= 1023 && typeof closeSidebarFn === 'function') {
+                            closeSidebarFn();
+                        }
+
+                        showAlert('Order reactivated successfully!', 'success');
+                        
+                        loadProfile();
+                        loadHistory();
+                        startPolling(o.order_id);
+                    } else {
+                        showAlert(data.message || 'Failed to fetch order.', 'danger');
+                    }
+                })
+                .catch(err => {
+                    showAlert('Error fetching order: ' + err.message, 'danger');
+                })
+                .finally(() => {
+                    fetchBtn.disabled = false;
+                    fetchBtn.innerHTML = origHtml;
+                });
             }
 
             if (viewMsgBtn) {
@@ -840,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pollInterval = setInterval(() => {
             pollSmsStatus(orderId);
-        }, 3000);
+        }, 2000);
 
         countdownInterval = setInterval(() => {
             countdownSeconds--;
@@ -887,11 +926,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleExpiration() {
         stopIntervals();
-        orderStatusBadge.textContent = 'Expired';
-        orderStatusBadge.className = 'badge-custom badge-expired';
+        orderStatusBadge.textContent = 'Pending';
+        orderStatusBadge.className = 'badge-custom badge-pending';
         smsStatusContainer.className = 'sms-status-container';
         waitingSpinner.classList.add('d-none');
-        waitingStatusText.textContent = 'Operation expired.';
+        waitingStatusText.textContent = 'Timer expired. Order is pending.';
         endActivationBtn.style.display = 'none';
         loadProfile();
         loadHistory();
@@ -978,12 +1017,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 stopIntervals();
                 
-                orderStatusBadge.textContent = data.status === 'COMPLETED' ? 'Done' : 'Expired';
-                orderStatusBadge.className = `badge-custom badge-${data.status === 'COMPLETED' ? 'completed' : 'expired'}`;
+                orderStatusBadge.textContent = data.status === 'COMPLETED' ? 'Done' : 'Pending';
+                orderStatusBadge.className = `badge-custom badge-${data.status === 'COMPLETED' ? 'completed' : 'pending'}`;
                 smsStatusContainer.className = 'sms-status-container';
                 
                 waitingSpinner.classList.add('d-none');
-                waitingStatusText.textContent = data.status === 'COMPLETED' ? 'Activation complete.' : 'Activation canceled.';
+                waitingStatusText.textContent = data.status === 'COMPLETED' ? 'Activation complete.' : 'Activation stopped.';
                 
                 if (data.otp && data.otp !== 'Not Received') {
                     setOtpDisplayValue(data.otp);
@@ -1034,10 +1073,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         lastHistoryData.forEach(o => {
             const tr = document.createElement('tr');
-            const sc = o.status === 'COMPLETED' ? 'badge-completed' : (o.status === 'PENDING' ? 'badge-pending' : 'badge-expired');
+            const sc = o.status === 'COMPLETED' ? 'badge-completed' : (o.status === 'PENDING' ? 'badge-pending' : (o.status === 'REFUNDED' ? 'badge-expired' : 'badge-expired'));
             let statusText = o.status;
             if (o.status === 'PENDING') statusText = 'Pending';
             else if (o.status === 'COMPLETED') statusText = 'Done';
+            else if (o.status === 'REFUNDED') statusText = 'Refunded';
             else if (o.status === 'EXPIRED') statusText = 'Expired';
 
             // OTP cell logic
@@ -1054,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Action cell logic
             const actionMarkup = o.status === 'PENDING'
                 ? `<button class="btn btn-sm btn-primary px-3 py-1 btn-fetch-otp" data-order-id="${o.order_id}"><i class="fa-solid fa-rotate-right me-1"></i>Fetch OTP</button>`
-                : `<button class="btn btn-sm btn-outline-secondary px-3 py-1" disabled>No Action</button>`;
+                : `<button class="btn btn-sm btn-outline-secondary px-3 py-1" disabled>${o.status === 'REFUNDED' ? 'Refunded' : 'No Action'}</button>`;
 
             tr.innerHTML = `
                 <td><code>${o.order_id}</code></td>

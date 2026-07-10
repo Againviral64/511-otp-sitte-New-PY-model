@@ -18,8 +18,8 @@ export async function POST(request) {
                 return NextResponse.json({ success: false, message: 'Mock order not found' });
             }
             const order = mockOrders[idx];
-            const finalStatus = (order.otp && order.otp !== '------' && order.otp !== 'Not Received') ? 'COMPLETED' : 'EXPIRED';
-            const finalOtpVal = order.otp || 'Not Received';
+            const finalStatus = (order.otp && order.otp !== '------' && order.otp !== 'Not Received') ? 'COMPLETED' : 'PENDING';
+            const finalOtpVal = finalStatus === 'COMPLETED' ? order.otp : null;
             mockOrders[idx].status = finalStatus;
             mockOrders[idx].otp = finalOtpVal;
             return NextResponse.json({ success: true, status: finalStatus, otp: finalOtpVal });
@@ -36,8 +36,8 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'Order not found in database' });
         }
 
-        const finalStatus = (order.otp && order.otp !== '------' && order.otp !== 'Not Received') ? 'COMPLETED' : 'EXPIRED';
-        const finalOtpVal = order.otp || 'Not Received';
+        const finalStatus = (order.otp && order.otp !== '------' && order.otp !== 'Not Received') ? 'COMPLETED' : 'PENDING';
+        const finalOtpVal = finalStatus === 'COMPLETED' ? order.otp : null;
 
         const { error: updateErr } = await supabase
             .from('orders')
@@ -46,24 +46,6 @@ export async function POST(request) {
 
         if (updateErr) {
             return NextResponse.json({ success: false, message: updateErr.message });
-        }
-
-        if (finalStatus === 'EXPIRED') {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('balance, spend, total_orders')
-                .eq('id', order.user_id)
-                .maybeSingle();
-            if (profile) {
-                await supabase
-                    .from('profiles')
-                    .update({
-                        balance: parseFloat(profile.balance) + parseFloat(order.price),
-                        spend: Math.max(0, parseFloat(profile.spend) - parseFloat(order.price)),
-                        total_orders: Math.max(0, parseInt(profile.total_orders) - 1)
-                    })
-                    .eq('id', order.user_id);
-            }
         }
 
         return NextResponse.json({ success: true, status: finalStatus, otp: finalOtpVal });
