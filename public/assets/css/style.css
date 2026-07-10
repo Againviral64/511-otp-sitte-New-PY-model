@@ -468,23 +468,83 @@ img {
 @media (max-width: 767px) {
     /* Header wrapped elements */
     .workspace-header {
-        flex-direction: column;
+        display: flex !important;
+        flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 1rem;
-        padding: 1rem 1.25rem !important;
+        gap: 8px !important;
+        padding: 10px 12px !important;
+        position: relative !important;
     }
-    .workspace-header .d-flex {
-        flex-wrap: wrap;
-        width: 100%;
-        gap: 0.5rem !important;
-    }
-    .workspace-header .balance-card {
-        flex-grow: 1;
-        justify-content: space-between;
-        padding: 0.5rem 0.75rem !important;
+    .workspace-header > .d-flex:first-child {
+        width: calc(100% - 150px) !important;
+        display: flex !important;
+        align-items: center !important;
     }
     .page-title {
-        font-size: 1.3rem !important;
+        font-size: 1.15rem !important;
+        margin: 0 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #sidebarToggleBtn {
+        width: 36px !important;
+        height: 36px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center;
+        margin-right: 8px !important;
+        border-radius: 8px !important;
+    }
+    #themeToggleBtn {
+        position: absolute !important;
+        top: 10px !important;
+        right: 120px !important;
+        margin: 0 !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .workspace-header .d-flex:nth-child(2) > div:nth-child(2) {
+        position: absolute !important;
+        top: 10px !important;
+        right: 12px !important;
+        margin: 0 !important;
+    }
+    #currencySelector {
+        width: 100px !important;
+        font-size: 0.8rem !important;
+        padding: 5px 8px !important;
+    }
+    .workspace-header > .d-flex:nth-child(2) {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100% !important;
+        gap: 8px !important;
+        margin-top: 4px !important;
+        flex-wrap: nowrap !important;
+    }
+    .workspace-header .balance-card {
+        flex: 1 1 50% !important;
+        padding: 6px 10px !important;
+        border-radius: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+    .workspace-header .balance-label {
+        font-size: 0.65rem !important;
+        margin-bottom: 2px !important;
+    }
+    .workspace-header .balance-value {
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+    }
+    .workspace-header .btn-refresh {
+        font-size: 0.8rem !important;
+        padding: 2px 6px !important;
     }
 
     /* Landing/Home Page Hero Section */
@@ -526,5 +586,1176 @@ img {
     }
     .auth-logo {
         font-size: 1.75rem !important;
+    }
+}
+
+/* ==========================================================================
+   ADVANCED FEATURES: DARK MODE, TOASTS, MOBILE BOTTOM NAV
+   ========================================================================== */
+
+/* 1. Sleek Toast Notifications styling */
+.toast-container-custom {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 380px;
+    width: calc(100vw - 48px);
+    pointer-events: none;
+}
+
+.toast-custom {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    pointer-events: auto;
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    position: relative;
+}
+
+.toast-custom.show {
+    transform: translateX(0);
+}
+
+.toast-custom-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    font-size: 0.92rem;
+    color: var(--dark);
+}
+
+.toast-custom-icon {
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+}
+
+.toast-custom.success {
+    border-left: 4px solid var(--success);
+}
+.toast-custom.success .toast-custom-icon {
+    color: var(--success);
+}
+
+.toast-custom.danger {
+    border-left: 4px solid var(--danger);
+}
+.toast-custom.danger .toast-custom-icon {
+    color: var(--danger);
+}
+
+.toast-custom.warning {
+    border-left: 4px solid var(--warning);
+}
+.toast-custom.warning .toast-custom-icon {
+    color: var(--warning);
+}
+
+.toast-custom.info {
+    border-left: 4px solid var(--primary);
+}
+.toast-custom.info .toast-custom-icon {
+    color: var(--primary);
+}
+
+.toast-custom-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.toast-custom-close:hover {
+    color: var(--dark);
+}
+
+/* 2. Premium Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) 10px;
+}
+
+.mobile-bottom-nav-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.mobile-nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    text-decoration: none !important;
+    font-size: 0.72rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    gap: 4px;
+    position: relative;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.mobile-nav-link i {
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.mobile-nav-link.active {
+    color: var(--primary);
+    background-color: var(--primary-light);
+}
+
+.mobile-nav-link.active i {
+    transform: translateY(-2px);
+}
+
+/* Responsive Trigger for Bottom Nav */
+@media (max-width: 1023px) {
+    .mobile-bottom-nav {
+        display: block;
+    }
+    body {
+        padding-bottom: calc(75px + env(safe-area-inset-bottom)) !important; /* Make room for the bottom nav bar */
+    }
+    /* Hide floating whatsapp button if it conflicts, or lift it higher */
+    #whatsapp-floating-btn {
+        bottom: calc(85px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* 3. Sleek Premium Dark Theme Overrides */
+body.dark-mode {
+    background-color: #0b0f19 !important;
+    color: #f1f5f9;
+    --dark: #f1f5f9;
+    --light: #1e293b;
+    --border: #334155;
+    --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .workspace-header {
+    background: #0f172a;
+    border-bottom-color: #1e293b;
+}
+
+body.dark-mode .page-title {
+    color: #ffffff;
+}
+
+body.dark-mode .main-card {
+    background: #0f172a;
+    border-color: #1e293b;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .main-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+body.dark-mode .form-control, 
+body.dark-mode .form-select {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+body.dark-mode .form-control:focus, 
+body.dark-mode .form-select:focus {
+    background-color: #1e293b;
+    border-color: var(--primary);
+    color: #ffffff;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #64748b;
+}
+
+body.dark-mode .price-display-box, 
+body.dark-mode .number-box, 
+body.dark-mode .sms-status-container,
+body.dark-mode .payment-instructions-box,
+body.dark-mode .order-meta-info {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+body.dark-mode .order-meta-info span {
+    color: #ffffff;
+}
+
+body.dark-mode .btn-copy {
+    background-color: rgba(0, 82, 204, 0.15);
+    border-color: rgba(0, 82, 204, 0.2);
+    color: #60a5fa;
+}
+
+body.dark-mode .btn-copy:hover {
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+body.dark-mode .table-custom th {
+    background-color: #1e293b;
+    color: #94a3b8;
+    border-bottom-color: #334155;
+}
+
+body.dark-mode .table-custom td {
+    color: #cbd5e1;
+    border-bottom-color: #1e293b;
+}
+
+body.dark-mode .table-custom tr:hover td {
+    background-color: #131b2e;
+}
+
+body.dark-mode .modal-content {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    border: 1px solid #1e293b;
+}
+
+body.dark-mode .modal-header {
+    background-color: #1e293b !important;
+    border-bottom-color: #334155;
+}
+
+body.dark-mode .modal-header .btn-close {
+    filter: invert(1) grayscale(1) brightness(2);
+}
+
+body.dark-mode .modal-footer {
+    border-top-color: #334155;
+}
+
+body.dark-mode .modal-body .bg-light {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .card.bg-light {
+    background-color: #1e293b !important;
+    color: #f1f5f9;
+}
+
+body.dark-mode .bg-light.p-4.rounded {
+    background-color: #1e293b !important;
+}
+
+body.dark-mode .balance-card.bg-light {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+body.dark-mode .balance-card.bg-light .balance-value {
+    color: #ffffff !important;
+}
+
+body.dark-mode .toast-custom {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .toast-custom-content {
+    color: #ffffff;
+}
+
+body.dark-mode .mobile-bottom-nav {
+    background: rgba(15, 23, 42, 0.9);
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .mobile-nav-link {
+    color: #94a3b8;
+}
+
+body.dark-mode .mobile-nav-link.active {
+    color: #ffffff;
+    background-color: rgba(0, 82, 204, 0.2);
+}
+
+body.dark-mode .chat-container {
+    background-color: #0f172a;
+    border-color: #1e293b;
+}
+
+body.dark-mode .chat-header {
+    background-color: #1e293b;
+    border-bottom-color: #334155;
+    color: #ffffff;
+}
+
+body.dark-mode .chat-messages {
+    background-color: #0b0f19;
+}
+
+body.dark-mode .chat-bubble.received {
+    background-color: #1e293b;
+    color: #ffffff;
+}
+
+body.dark-mode .chat-input-area {
+    background-color: #0f172a;
+    border-top-color: #1e293b;
+}
+
+/* ==========================================================================
+   MOBILE VIEW OPTIMIZATIONS (SCALED HEADINGS, TOASTS, SCROLL TABS & CARDS)
+   ========================================================================== */
+
+/* 1. App-style Horizontal Swipable tabs */
+@media (max-width: 991px) {
+    .nav-tabs-custom, .nav-tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+        padding-bottom: 6px !important;
+        gap: 8px !important;
+    }
+    .nav-tabs-custom .nav-link, .nav-tabs .nav-link {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+    }
+    .nav-tabs-custom::-webkit-scrollbar, .nav-tabs::-webkit-scrollbar {
+        display: none !important;
+    }
+}
+
+/* 2. Mobile Toast Alerts position */
+@media (max-width: 768px) {
+    .toast-container-custom {
+        top: auto !important;
+        bottom: calc(85px + env(safe-area-inset-bottom)) !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: calc(100% - 32px) !important;
+        max-width: 400px !important;
+    }
+    .toast-custom {
+        transform: translateY(150%) !important;
+    }
+    .toast-custom.show {
+        transform: translateY(0) !important;
+    }
+}
+
+/* 3. Responsive typography and compact scaling */
+@media (max-width: 480px) {
+    h2, .page-title {
+        font-size: 1.5rem !important;
+    }
+    h3, .section-title {
+        font-size: 1.25rem !important;
+    }
+    .main-card {
+        padding: 1.25rem !important;
+    }
+}
+
+/* 4. CSS Table-to-Cards Transformation */
+@media (max-width: 767px) {
+    .table-responsive-cards table,
+    .table-responsive-cards thead,
+    .table-responsive-cards tbody,
+    .table-responsive-cards th,
+    .table-responsive-cards td,
+    .table-responsive-cards tr {
+        display: block !important;
+        width: 100% !important;
+    }
+    
+    .table-responsive-cards thead {
+        display: none !important;
+    }
+    
+    .table-responsive-cards tr {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.015);
+    }
+    
+    body.dark-mode .table-responsive-cards tr {
+        background: #0f172a !important;
+        border-color: #1e293b !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .table-responsive-cards td {
+        border: none !important;
+        padding: 8px 0 !important;
+        position: relative;
+        padding-left: 45% !important;
+        text-align: right !important;
+        font-size: 0.9rem;
+    }
+    
+    .table-responsive-cards td::before {
+        position: absolute;
+        left: 0;
+        width: 40%;
+        text-align: left;
+        font-weight: 700;
+        color: #64748b;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    body.dark-mode .table-responsive-cards td::before {
+        color: #94a3b8;
+    }
+
+    /* Labels definitions */
+    #servicesTableBody td:nth-of-type(1)::before { content: "App Name"; }
+    #servicesTableBody td:nth-of-type(2)::before { content: "Category"; }
+    #servicesTableBody td:nth-of-type(3)::before { content: "Product ID"; }
+    #servicesTableBody td:nth-of-type(4)::before { content: "Price"; }
+    #servicesTableBody td:nth-of-type(5)::before { content: "Stock"; }
+    #servicesTableBody td:nth-of-type(6)::before { content: "Action"; }
+
+    #orderHistoryTableBody td:nth-of-type(1)::before { content: "Order ID"; }
+    #orderHistoryTableBody td:nth-of-type(2)::before { content: "Service"; }
+    #orderHistoryTableBody td:nth-of-type(3)::before { content: "Number"; }
+    #orderHistoryTableBody td:nth-of-type(4)::before { content: "Price"; }
+    #orderHistoryTableBody td:nth-of-type(5)::before { content: "OTP Code"; }
+    #orderHistoryTableBody td:nth-of-type(6)::before { content: "Message"; }
+    #orderHistoryTableBody td:nth-of-type(7)::before { content: "Created At"; }
+    #orderHistoryTableBody td:nth-of-type(8)::before { content: "Status"; }
+    #orderHistoryTableBody td:nth-of-type(9)::before { content: "Action"; }
+
+    #depositHistoryTableBody td:nth-of-type(1)::before { content: "Date"; }
+    #depositHistoryTableBody td:nth-of-type(2)::before { content: "Gateway"; }
+    #depositHistoryTableBody td:nth-of-type(3)::before { content: "Amount"; }
+    #depositHistoryTableBody td:nth-of-type(4)::before { content: "Rate"; }
+    #depositHistoryTableBody td:nth-of-type(5)::before { content: "Status"; }
+    #depositHistoryTableBody td:nth-of-type(6)::before { content: "TxID/Note"; }
+
+    #usersTableBody td:nth-of-type(1)::before { content: "User"; }
+    #usersTableBody td:nth-of-type(2)::before { content: "Email"; }
+    #usersTableBody td:nth-of-type(3)::before { content: "Balance"; }
+    #usersTableBody td:nth-of-type(4)::before { content: "Role"; }
+    #usersTableBody td:nth-of-type(5)::before { content: "Status"; }
+    #usersTableBody td:nth-of-type(6)::before { content: "Actions"; }
+
+    #adminDepositsTableBody td:nth-of-type(1)::before { content: "User Info"; }
+    #adminDepositsTableBody td:nth-of-type(2)::before { content: "Method"; }
+    #adminDepositsTableBody td:nth-of-type(3)::before { content: "Amount"; }
+    #adminDepositsTableBody td:nth-of-type(4)::before { content: "TxID/Note"; }
+    #adminDepositsTableBody td:nth-of-type(5)::before { content: "Actions"; }
+
+    #adminDepositsHistoryTableBody td:nth-of-type(1)::before { content: "User Info"; }
+    #adminDepositsHistoryTableBody td:nth-of-type(2)::before { content: "Method"; }
+    #adminDepositsHistoryTableBody td:nth-of-type(3)::before { content: "Amount"; }
+    #adminDepositsHistoryTableBody td:nth-of-type(4)::before { content: "TxID/Note"; }
+    #adminDepositsHistoryTableBody td:nth-of-type(5)::before { content: "Status"; }
+
+    #adminServicesTableBody td:nth-of-type(1)::before { content: "Service ID"; }
+    #adminServicesTableBody td:nth-of-type(2)::before { content: "Group"; }
+    #adminServicesTableBody td:nth-of-type(3)::before { content: "App Name"; }
+    #adminServicesTableBody td:nth-of-type(4)::before { content: "Cost Price"; }
+    #adminServicesTableBody td:nth-of-type(5)::before { content: "Sell Price"; }
+    #adminServicesTableBody td:nth-of-type(6)::before { content: "Stock"; }
+    #adminServicesTableBody td:nth-of-type(7)::before { content: "Status"; }
+    #adminServicesTableBody td:nth-of-type(8)::before { content: "Actions"; }
+
+    #adminOrdersTableBody td:nth-of-type(1)::before { content: "User"; }
+    #adminOrdersTableBody td:nth-of-type(2)::before { content: "Order ID"; }
+    #adminOrdersTableBody td:nth-of-type(3)::before { content: "Service"; }
+    #adminOrdersTableBody td:nth-of-type(4)::before { content: "Number"; }
+    #adminOrdersTableBody td:nth-of-type(5)::before { content: "OTP Code"; }
+    #adminOrdersTableBody td:nth-of-type(6)::before { content: "Price"; }
+    #adminOrdersTableBody td:nth-of-type(7)::before { content: "Status"; }
+    #adminOrdersTableBody td:nth-of-type(8)::before { content: "Date"; }
+
+    #adminDepositMethodsTableBody td:nth-of-type(1)::before { content: "Method"; }
+    #adminDepositMethodsTableBody td:nth-of-type(2)::before { content: "Bank Name"; }
+    #adminDepositMethodsTableBody td:nth-of-type(3)::before { content: "Account Title"; }
+    #adminDepositMethodsTableBody td:nth-of-type(4)::before { content: "Account Number"; }
+    #adminDepositMethodsTableBody td:nth-of-type(5)::before { content: "Status"; }
+    #adminDepositMethodsTableBody td:nth-of-type(6)::before { content: "Actions"; }
+
+    #adminTicketsTableBody td:nth-of-type(1)::before { content: "Ticket ID"; }
+    #adminTicketsTableBody td:nth-of-type(2)::before { content: "User"; }
+    #adminTicketsTableBody td:nth-of-type(3)::before { content: "Subject"; }
+    #adminTicketsTableBody td:nth-of-type(4)::before { content: "Category"; }
+    #adminTicketsTableBody td:nth-of-type(5)::before { content: "Status"; }
+    #adminTicketsTableBody td:nth-of-type(6)::before { content: "Last Update"; }
+    #adminTicketsTableBody td:nth-of-type(7)::before { content: "Actions"; }
+    
+    #ticketsTableBody td:nth-of-type(1)::before { content: "Ticket ID"; }
+    #ticketsTableBody td:nth-of-type(2)::before { content: "Subject"; }
+    #ticketsTableBody td:nth-of-type(3)::before { content: "Category"; }
+    #ticketsTableBody td:nth-of-type(4)::before { content: "Status"; }
+    #ticketsTableBody td:nth-of-type(5)::before { content: "Last Update"; }
+    #ticketsTableBody td:nth-of-type(6)::before { content: "Action"; }
+
+    .table-responsive-cards td .btn, 
+    .table-responsive-cards td .badge-custom,
+    .table-responsive-cards td .status-badge {
+        display: inline-block !important;
+        width: auto !important;
+    }
+}
+
+/* ================================================================
+   MOBILE UI OPTIMIZATION — COMPACT LAYOUT (≤ 768px)
+   All rules below override earlier mobile styles via cascade order.
+   Desktop is completely unaffected.
+   ================================================================ */
+@media (max-width: 768px) {
+
+    /* --- 1. Fixed Header at Top --- */
+    .workspace-header {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 90 !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06) !important;
+    }
+    body.dark-mode .workspace-header {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* --- 2. Content Offset for Fixed Header + Tighter Spacing --- */
+    .workspace-content {
+        padding-top: 115px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    .main-card {
+        padding: 14px !important;
+        margin-bottom: 10px !important;
+    }
+    .section-title {
+        font-size: 1rem !important;
+        margin-bottom: 0.75rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    .card-title {
+        font-size: 1.05rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    .page-title {
+        font-size: 1.1rem !important;
+    }
+    .form-label {
+        font-size: 0.82rem !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* --- 3. Touch-Friendly Buttons (min 44px) --- */
+    .btn-primary-custom {
+        min-height: 44px !important;
+        padding: 10px 16px !important;
+    }
+    .btn-copy {
+        min-height: 44px !important;
+    }
+    .btn-danger {
+        min-height: 44px !important;
+    }
+
+    /* --- 4. Compact OTP Page Elements --- */
+    .number-box {
+        padding: 0.75rem !important;
+        font-size: 1.35rem !important;
+        min-height: 55px !important;
+        margin-bottom: 1rem !important;
+    }
+    .otp-box {
+        font-size: 1.75rem !important;
+        min-height: 42px !important;
+        margin: 0.5rem 0 !important;
+    }
+    .sms-status-container {
+        padding: 1rem !important;
+    }
+    .price-display-box {
+        padding: 0.75rem !important;
+        margin-bottom: 1rem !important;
+    }
+    .search-box {
+        width: 100% !important;
+    }
+
+    /* --- 5. Compact Table Cards Base Override --- */
+    .table-responsive-cards tr {
+        padding: 12px 14px !important;
+        margin-bottom: 10px !important;
+        border-radius: 12px !important;
+    }
+    .table-responsive-cards td {
+        padding: 3px 0 !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* =====================================================
+       ORDER HISTORY — Compact Flex Cards (~120-140px)
+       ===================================================== */
+    #orderHistoryTableBody tr {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+    }
+    #orderHistoryTableBody td {
+        padding-left: 0 !important;
+        text-align: left !important;
+    }
+    #orderHistoryTableBody td::before {
+        position: static !important;
+        width: auto !important;
+        display: inline !important;
+        font-size: 0.7rem !important;
+        margin-right: 3px !important;
+    }
+    /* Hide: Order ID, Message */
+    #orderHistoryTableBody td:nth-of-type(1),
+    #orderHistoryTableBody td:nth-of-type(6) {
+        display: none !important;
+    }
+    /* Service Name — top-left title */
+    #orderHistoryTableBody td:nth-of-type(2) {
+        width: 60% !important;
+        order: 1;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        padding-bottom: 4px !important;
+    }
+    #orderHistoryTableBody td:nth-of-type(2)::before { content: none !important; }
+    /* Status Badge — top-right */
+    #orderHistoryTableBody td:nth-of-type(8) {
+        width: 40% !important;
+        text-align: right !important;
+        order: 2;
+        padding-bottom: 4px !important;
+    }
+    #orderHistoryTableBody td:nth-of-type(8)::before { content: none !important; }
+    /* Phone Number — full width */
+    #orderHistoryTableBody td:nth-of-type(3) {
+        width: 100% !important;
+        order: 3;
+        font-size: 0.82rem !important;
+    }
+    #orderHistoryTableBody td:nth-of-type(3)::before { content: "Number: " !important; }
+    /* Price — left half */
+    #orderHistoryTableBody td:nth-of-type(4) {
+        width: 50% !important;
+        order: 4;
+    }
+    #orderHistoryTableBody td:nth-of-type(4)::before { content: "Price: " !important; }
+    /* OTP — right half */
+    #orderHistoryTableBody td:nth-of-type(5) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 5;
+    }
+    #orderHistoryTableBody td:nth-of-type(5)::before { content: "OTP: " !important; }
+    /* Date — bottom-left */
+    #orderHistoryTableBody td:nth-of-type(7) {
+        width: 60% !important;
+        order: 6;
+        font-size: 0.75rem !important;
+        padding-top: 4px !important;
+        opacity: 0.7;
+    }
+    #orderHistoryTableBody td:nth-of-type(7)::before { content: none !important; }
+    /* Action Button — bottom-right */
+    #orderHistoryTableBody td:nth-of-type(9) {
+        width: 40% !important;
+        text-align: right !important;
+        order: 7;
+        padding-top: 4px !important;
+    }
+    #orderHistoryTableBody td:nth-of-type(9)::before { content: none !important; }
+
+    /* =====================================================
+       SERVICES / RATES — Compact Flex Cards (~90-110px)
+       ===================================================== */
+    #servicesTableBody tr {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+    }
+    #servicesTableBody td {
+        padding-left: 0 !important;
+        text-align: left !important;
+    }
+    #servicesTableBody td::before {
+        position: static !important;
+        width: auto !important;
+        display: inline !important;
+        font-size: 0.7rem !important;
+        margin-right: 3px !important;
+    }
+    /* Hide: Product ID */
+    #servicesTableBody td:nth-of-type(3) {
+        display: none !important;
+    }
+    /* App Name — top-left */
+    #servicesTableBody td:nth-of-type(1) {
+        width: 55% !important;
+        order: 1;
+        font-size: 0.95rem !important;
+        padding-bottom: 2px !important;
+    }
+    #servicesTableBody td:nth-of-type(1)::before { content: none !important; }
+    /* Category — top-right */
+    #servicesTableBody td:nth-of-type(2) {
+        width: 45% !important;
+        text-align: right !important;
+        order: 2;
+        padding-bottom: 2px !important;
+    }
+    #servicesTableBody td:nth-of-type(2)::before { content: none !important; }
+    /* Price — left half */
+    #servicesTableBody td:nth-of-type(4) {
+        width: 50% !important;
+        order: 3;
+        font-size: 0.9rem !important;
+    }
+    #servicesTableBody td:nth-of-type(4)::before { content: none !important; }
+    /* Stock — right half */
+    #servicesTableBody td:nth-of-type(5) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 4;
+    }
+    #servicesTableBody td:nth-of-type(5)::before { content: none !important; }
+    /* Order Button — full width */
+    #servicesTableBody td:nth-of-type(6) {
+        width: 100% !important;
+        order: 5;
+        text-align: center !important;
+        padding-top: 6px !important;
+    }
+    #servicesTableBody td:nth-of-type(6)::before { content: none !important; }
+    #servicesTableBody td:nth-of-type(6) .btn {
+        width: 100% !important;
+        min-height: 40px !important;
+    }
+
+    /* =====================================================
+       DEPOSIT HISTORY — Compact Flex Cards (~80-100px)
+       ===================================================== */
+    #depositHistoryTableBody tr {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+    }
+    #depositHistoryTableBody td {
+        padding-left: 0 !important;
+        text-align: left !important;
+    }
+    #depositHistoryTableBody td::before {
+        position: static !important;
+        width: auto !important;
+        display: inline !important;
+        font-size: 0.7rem !important;
+        margin-right: 3px !important;
+    }
+    /* Method — top-left title */
+    #depositHistoryTableBody td:nth-of-type(2) {
+        width: 50% !important;
+        order: 1;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        padding-bottom: 2px !important;
+    }
+    #depositHistoryTableBody td:nth-of-type(2)::before { content: none !important; }
+    /* Status — top-right */
+    #depositHistoryTableBody td:nth-of-type(6) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 2;
+        padding-bottom: 2px !important;
+    }
+    #depositHistoryTableBody td:nth-of-type(6)::before { content: none !important; }
+    /* Amount — left half */
+    #depositHistoryTableBody td:nth-of-type(3) {
+        width: 50% !important;
+        order: 3;
+        font-size: 0.9rem !important;
+    }
+    #depositHistoryTableBody td:nth-of-type(3)::before { content: "Amount: " !important; }
+    /* Proof — right half */
+    #depositHistoryTableBody td:nth-of-type(4) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 4;
+    }
+    #depositHistoryTableBody td:nth-of-type(4)::before { content: none !important; }
+    /* TxID — bottom-left */
+    #depositHistoryTableBody td:nth-of-type(1) {
+        width: 50% !important;
+        order: 5;
+        font-size: 0.75rem !important;
+    }
+    #depositHistoryTableBody td:nth-of-type(1)::before { content: "TxID: " !important; }
+    /* Date — bottom-right */
+    #depositHistoryTableBody td:nth-of-type(5) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 6;
+        font-size: 0.75rem !important;
+        opacity: 0.7;
+    }
+    #depositHistoryTableBody td:nth-of-type(5)::before { content: none !important; }
+
+    /* =====================================================
+       SUPPORT TICKETS (USER) — Compact Flex Cards
+       ===================================================== */
+    #ticketsTableBody tr {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+    }
+    #ticketsTableBody td {
+        padding-left: 0 !important;
+        text-align: left !important;
+        border: none !important;
+    }
+    #ticketsTableBody td::before {
+        position: static !important;
+        width: auto !important;
+        display: inline !important;
+        font-size: 0.7rem !important;
+        margin-right: 3px !important;
+    }
+    /* Title (Subject) — top-left */
+    #ticketsTableBody td:nth-of-type(1) {
+        width: 65% !important;
+        order: 1;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        padding-bottom: 2px !important;
+    }
+    #ticketsTableBody td:nth-of-type(1)::before { content: none !important; }
+    /* Status Badge — top-right */
+    #ticketsTableBody td:nth-of-type(3) {
+        width: 35% !important;
+        text-align: right !important;
+        order: 2;
+        padding-bottom: 2px !important;
+    }
+    #ticketsTableBody td:nth-of-type(3)::before { content: none !important; }
+    /* Category Group — line 2 full width */
+    #ticketsTableBody td:nth-of-type(2) {
+        width: 100% !important;
+        order: 3;
+        font-size: 0.82rem !important;
+        padding-bottom: 4px !important;
+    }
+    #ticketsTableBody td:nth-of-type(2)::before { content: "Category: " !important; }
+    /* Date — bottom-left */
+    #ticketsTableBody td:nth-of-type(4) {
+        width: 50% !important;
+        order: 4;
+        font-size: 0.75rem !important;
+        opacity: 0.7;
+    }
+    #ticketsTableBody td:nth-of-type(4)::before { content: none !important; }
+    /* Action (Chat button) — bottom-right */
+    #ticketsTableBody td:nth-of-type(5) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 5;
+    }
+    #ticketsTableBody td:nth-of-type(5)::before { content: none !important; }
+
+    /* =====================================================
+       ADMIN HEADER — Fixed & Compact on Mobile
+       ===================================================== */
+    .admin-header {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 1020 !important;
+        padding: 8px 12px !important;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    }
+    .admin-header .container {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 0 !important;
+        padding: 0 !important;
+    }
+    .admin-brand {
+        font-size: 1.05rem !important;
+        margin: 0 !important;
+    }
+    .admin-header .d-flex.align-items-center.gap-3 {
+        gap: 6px !important;
+    }
+    #adminCurrencySelector {
+        width: 85px !important;
+        font-size: 0.75rem !important;
+        padding: 4px 6px !important;
+        border-color: #475569 !important;
+        background-color: #1e293b !important;
+        color: white !important;
+    }
+    #adminBadge {
+        font-size: 0.7rem !important;
+        padding: 4px 8px !important;
+    }
+    .admin-header .btn-outline-light {
+        padding: 4px 8px !important;
+        font-size: 0.8rem !important;
+    }
+    /* Offset main content container under admin header */
+    body > .container.pb-5 {
+        padding-top: 75px !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    /* =====================================================
+       SUPPORT TICKETS (ADMIN) — Compact Flex Cards
+       ===================================================== */
+    #adminTicketsTableBody tr {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+    }
+    #adminTicketsTableBody td {
+        padding-left: 0 !important;
+        text-align: left !important;
+        border: none !important;
+    }
+    #adminTicketsTableBody td::before {
+        position: static !important;
+        width: auto !important;
+        display: inline !important;
+        font-size: 0.7rem !important;
+        margin-right: 3px !important;
+    }
+    /* Ticket ID - top-left small */
+    #adminTicketsTableBody td:nth-of-type(1) {
+        width: 20% !important;
+        order: 1;
+        font-size: 0.8rem !important;
+        font-weight: bold;
+        padding-bottom: 2px !important;
+    }
+    #adminTicketsTableBody td:nth-of-type(1)::before { content: none !important; }
+    /* Subject / Title - line 1 middle */
+    #adminTicketsTableBody td:nth-of-type(2) {
+        width: 50% !important;
+        order: 2;
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+        padding-bottom: 2px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #adminTicketsTableBody td:nth-of-type(2)::before { content: none !important; }
+    /* Status badge - top-right */
+    #adminTicketsTableBody td:nth-of-type(6) {
+        width: 30% !important;
+        text-align: right !important;
+        order: 3;
+        padding-bottom: 2px !important;
+    }
+    #adminTicketsTableBody td:nth-of-type(6)::before { content: none !important; }
+    /* Category Group - line 2 left */
+    #adminTicketsTableBody td:nth-of-type(3) {
+        width: 50% !important;
+        order: 4;
+        font-size: 0.8rem !important;
+    }
+    #adminTicketsTableBody td:nth-of-type(3)::before { content: "Cat: " !important; }
+    /* Created date - line 2 right */
+    #adminTicketsTableBody td:nth-of-type(7) {
+        width: 50% !important;
+        text-align: right !important;
+        order: 5;
+        font-size: 0.75rem !important;
+        opacity: 0.7;
+    }
+    #adminTicketsTableBody td:nth-of-type(7)::before { content: none !important; }
+    /* User Profile - line 3 left */
+    #adminTicketsTableBody td:nth-of-type(4) {
+        width: 50% !important;
+        order: 6;
+        font-size: 0.8rem !important;
+    }
+    #adminTicketsTableBody td:nth-of-type(4)::before { content: "User: " !important; }
+    /* User Email - line 3 right */
+    #adminTicketsTableBody td:nth-of-type(5) {
+        width: 50% !important;
+        order: 7;
+        font-size: 0.8rem !important;
+        text-align: right !important;
+    }
+    #adminTicketsTableBody td:nth-of-type(5)::before { content: "Email: " !important; }
+    /* Actions - line 4 full width */
+    #adminTicketsTableBody td:nth-of-type(8) {
+        width: 100% !important;
+        order: 8;
+        text-align: center !important;
+        padding-top: 6px !important;
+    }
+    #adminTicketsTableBody td:nth-of-type(8)::before { content: none !important; }
+    #adminTicketsTableBody td:nth-of-type(8) .btn-action {
+        width: 100% !important;
+        min-height: 38px !important;
+    }
+
+    /* =====================================================
+       DEPOSIT FORM — Premium Banking Mobile Optimization
+       ===================================================== */
+    #pane-deposit .mb-3, 
+    #pane-deposit .mb-4 {
+        margin-bottom: 10px !important;
+    }
+    #pane-deposit .form-label {
+        margin-bottom: 3px !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+    }
+    #pane-deposit .form-control,
+    #pane-deposit .form-select {
+        height: 46px !important;
+        padding: 8px 12px !important;
+        font-size: 0.88rem !important;
+        border-radius: 10px !important;
+    }
+    #pane-deposit textarea.form-control {
+        height: 80px !important;
+        min-height: 80px !important;
+        padding-top: 10px !important;
+    }
+    #submitDepositBtn {
+        height: 50px !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        margin-top: 5px !important;
+    }
+    
+    /* Interactive instructions box compact padding */
+    .payment-instructions-box {
+        padding: 8px 10px !important;
+        font-size: 0.75rem !important;
+        margin-bottom: 10px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Premium Custom File Upload Field design */
+    #depositProofFile {
+        position: relative !important;
+        height: 48px !important;
+        background-color: var(--primary-light) !important;
+        border: 1px dashed var(--primary) !important;
+        color: var(--primary) !important;
+        cursor: pointer !important;
+        border-radius: 10px !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        font-size: 0 !important;
+    }
+    body.dark-mode #depositProofFile {
+        background-color: rgba(0, 82, 204, 0.15) !important;
+        border-color: var(--primary) !important;
+    }
+    #depositProofFile::file-selector-button {
+        display: none !important;
+    }
+    #depositProofFile::before {
+        content: "📷 Upload Payment Proof" !important;
+        position: absolute !important;
+        top: 30% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        color: var(--primary) !important;
+        pointer-events: none !important;
+    }
+    #depositProofFile::after {
+        content: "[ Choose Image ]" !important;
+        position: absolute !important;
+        bottom: 8% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        font-size: 0.7rem !important;
+        font-weight: 500 !important;
+        color: var(--primary) !important;
+        opacity: 0.8;
+        pointer-events: none !important;
+    }
+
+    /* Format file formats note */
+    #depositProofFile + .form-text {
+        font-size: 0px !important;
+        margin-top: 4px !important;
+    }
+    #depositProofFile + .form-text::after {
+        content: "JPG • PNG • WEBP • Max 5MB" !important;
+        font-size: 0.7rem !important;
+        display: block !important;
+        text-align: center !important;
+        color: #94a3b8 !important;
+        font-weight: 500 !important;
+    }
+
+    /* Custom Green status message for screenshot upload */
+    #depositProofFileName {
+        font-size: 0px !important;
+    }
+    #depositProofFileName::after {
+        content: "✓ Screenshot Selected" !important;
+        font-size: 0.8rem !important;
+        color: var(--success) !important;
+        font-weight: 600 !important;
     }
 }

@@ -1,14 +1,34 @@
 import { NextResponse } from 'next/server';
 import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders } from '@/lib/db';
 import { verifyAuth } from '@/lib/middleware';
+import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
+import { sanitizeText } from '@/lib/sanitize';
+
+// Track recent purchases per user to prevent duplicate orders
+const recentPurchases = new Map();
 
 export async function POST(request) {
     try {
+        // Rate limit check
+        const clientKey = getClientKey(request);
+        const limit = checkRateLimit(`buy:${clientKey}`, RATE_LIMITS.BUY.maxRequests, RATE_LIMITS.BUY.windowMs);
+        if (!limit.allowed) {
+            return NextResponse.json({ success: false, message: `Too many purchase requests. Please wait ${Math.ceil(limit.retryAfterMs / 1000)} seconds.` }, { status: 429 });
+        }
+
         const user = await verifyAuth(request);
         const { country, service } = await request.json();
 
         if (!country || !service) {
             return NextResponse.json({ success: false, message: 'Please select both Category and Service.' });
+        }
+
+        // Duplicate order prevention: 30-second cooldown per user+service
+        const purchaseKey = `${user.id}:${service}`;
+        const lastPurchase = recentPurchases.get(purchaseKey);
+        if (lastPurchase && Date.now() - lastPurchase < 30000) {
+            const waitSec = Math.ceil((30000 - (Date.now() - lastPurchase)) / 1000);
+            return NextResponse.json({ success: false, message: `Please wait ${waitSec} seconds before buying the same service again.` });
         }
 
         let sellPrice = 0.500;
@@ -158,6 +178,9 @@ export async function POST(request) {
                 console.error('Failed to save user order details:', orderError.message);
             }
         }
+
+        // Record successful purchase for cooldown tracking
+        recentPurchases.set(purchaseKey, Date.now());
 
         return NextResponse.json({
             success: true,

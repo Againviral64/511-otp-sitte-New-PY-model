@@ -13,6 +13,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nova OTP Provider - Premium Wholesale OTP Activation Platform</title>
     
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nova OTP">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    console.log('ServiceWorker registered:', reg.scope);
+                }).catch((err) => {
+                    console.warn('ServiceWorker registration failed:', err);
+                });
+            });
+        }
+    </script>
+    
     <!-- Meta tags for SEO -->
     <meta name="description" content="Wholesale OTP Activation Platform. Receive temporary SMS verification codes online instantly for Telegram, WhatsApp, Google, Discord, and more.">
     <meta name="keywords" content="OTP activation, temporary number, bypass SMS, verification codes, wholesale OTP, Easypaisa, Jazzcash">

@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
 import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockBalance } from '@/lib/db';
+import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
 
 export async function GET(request) {
+    // Rate limit check for API
+    const clientKey = getClientKey(request);
+    const limit = checkRateLimit(`apiv1:${clientKey}`, RATE_LIMITS.API_V1.maxRequests, RATE_LIMITS.API_V1.windowMs);
+    if (!limit.allowed) {
+        return NextResponse.json({ code: 429, data: [], message: 'Rate limit exceeded. Please slow down.' }, { status: 429 });
+    }
+
     const searchParams = new URL(request.url).searchParams;
     const key = searchParams.get('key');
     const id = searchParams.get('id');

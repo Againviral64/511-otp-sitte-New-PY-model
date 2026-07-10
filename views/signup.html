@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Nova OTP Provider</title>
     
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nova OTP">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    console.log('ServiceWorker registered:', reg.scope);
+                }).catch((err) => {
+                    console.warn('ServiceWorker registration failed:', err);
+                });
+            });
+        }
+    </script>
+    
     <!-- Bootstrap & FontAwesome & Custom CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
@@ -91,7 +109,7 @@
             </div>
 
             <button class="btn btn-outline-dark w-100 py-2 fs-6 m-0 d-flex align-items-center justify-content-center gap-2" type="button" id="googleBtn" style="border-radius: var(--radius); border-color: #dee2e6;">
-                <img src="https://lh3.googleusercontent.com/COxitfgDO1t3sAcocJwux5OcG134hh3ypSV3vyU1lqiW7utLI65e1AFLAHMu17a4FBU" alt="Google" style="width: 18px; height: 18px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 18px; height: 18px;">
                 Continue with Google
             </button>
         </form>

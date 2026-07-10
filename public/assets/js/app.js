@@ -3,6 +3,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionToken = localStorage.getItem('nova_session_token');
     if (!sessionToken) return; // Exit if unauthorized (handled by auth.js)
 
+    // Dark Mode Toggle Initial Setup
+    const bodyEl = document.body;
+    const savedTheme = localStorage.getItem('theme');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const themeToggleIcon = document.getElementById('themeToggleIcon');
+    
+    if (savedTheme === 'dark') {
+        bodyEl.classList.add('dark-mode');
+        if (themeToggleIcon) {
+            themeToggleIcon.className = 'fa-solid fa-sun fs-5';
+        }
+    }
+
     // Global states
     let availableServices = [];
     let currentOrderId = null;
@@ -29,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DOM Elements: Navigation / Layout
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
     const paneTitle = document.getElementById('paneTitle');
     const alertContainer = document.getElementById('alertContainer');
     const userNameLabel = document.getElementById('userNameLabel');
@@ -183,6 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const targetPane = link.getAttribute('data-pane');
                 
+                // Keep mobile bottom nav selection in sync
+                const correspondingMobileLink = document.querySelector(`.mobile-nav-link[data-pane="${targetPane}"]`);
+                if (correspondingMobileLink) {
+                    mobileNavLinks.forEach(l => l.classList.remove('active'));
+                    correspondingMobileLink.classList.add('active');
+                }
+
                 // Hide all panes, show target
                 document.querySelectorAll('.pane-content').forEach(pane => {
                     pane.classList.remove('active');
@@ -431,19 +452,90 @@ document.addEventListener('DOMContentLoaded', () => {
         // Account Profile Settings changes
         settingsProfileForm.addEventListener('submit', handleSaveProfileName);
         settingsPasswordForm.addEventListener('submit', handleSavePassword);
+
+        // Theme Toggle Click Handler
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const isDark = bodyEl.classList.toggle('dark-mode');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                if (themeToggleIcon) {
+                    themeToggleIcon.className = isDark ? 'fa-solid fa-sun fs-5' : 'fa-solid fa-moon fs-5';
+                }
+                showToast(isDark ? 'Dark Mode Enabled' : 'Light Mode Enabled', 'info');
+            });
+        }
+
+        // Mobile Bottom Navigation Click Router
+        mobileNavLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                mobileNavLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                const targetPane = link.getAttribute('data-pane');
+                
+                // Keep sidebar selection in sync if exists
+                const correspondingSidebarLink = document.querySelector(`.sidebar-link[data-pane="${targetPane}"]`);
+                if (correspondingSidebarLink) {
+                    sidebarLinks.forEach(l => l.classList.remove('active'));
+                    correspondingSidebarLink.classList.add('active');
+                }
+
+                // Hide all panes, show target
+                document.querySelectorAll('.pane-content').forEach(pane => {
+                    pane.classList.remove('active');
+                });
+                document.getElementById(`pane-${targetPane}`).classList.add('active');
+
+                // Update Header Pane Title Text
+                paneTitle.textContent = link.textContent.trim();
+                alertContainer.innerHTML = ''; // Clear alerts on switch
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    }
+
+    function showToast(message, type = 'danger') {
+        const toastContainer = document.getElementById('toastContainer');
+        if (!toastContainer) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast-custom ${type}`;
+        
+        let iconClass = 'fa-circle-check';
+        if (type === 'danger') iconClass = 'fa-circle-xmark';
+        else if (type === 'warning') iconClass = 'fa-triangle-exclamation';
+        else if (type === 'info') iconClass = 'fa-circle-info';
+
+        toast.innerHTML = `
+            <div class="toast-custom-content">
+                <span class="toast-custom-icon"><i class="fa-solid ${iconClass}"></i></span>
+                <span>${message}</span>
+            </div>
+            <button class="toast-custom-close"><i class="fa-solid fa-xmark"></i></button>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Force reflow and show
+        setTimeout(() => toast.classList.add('show'), 50);
+
+        const closeBtn = toast.querySelector('.toast-custom-close');
+        const dismissToast = () => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        };
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', dismissToast);
+        }
+
+        // Auto dismiss after 4.5 seconds
+        setTimeout(dismissToast, 4500);
     }
 
     function showAlert(message, type = 'danger') {
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                <div><i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} me-2"></i>${message}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        `;
-        alertContainer.innerHTML = '';
-        alertContainer.appendChild(wrapper);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast(message, type);
     }
 
     // Auth fetch request helper
@@ -463,6 +555,49 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Profile retrieve and load
      */
+    let hasSubscribedRealtime = false;
+
+    function setupGlobalRealtime() {
+        if (hasSubscribedRealtime || !lastProfileData || !lastProfileData.id) return;
+        initSupabaseClient().then(client => {
+            if (!client) return;
+            hasSubscribedRealtime = true;
+
+            // 1. Deposits Realtime listener
+            client
+                .channel(`public:deposits:user_id=eq.${lastProfileData.id}`)
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'deposits',
+                    filter: `user_id=eq.${lastProfileData.id}`
+                }, (payload) => {
+                    loadDeposits();
+                    loadProfile(); // Refresh balance
+                    if (payload.new && payload.new.status) {
+                        showToast(`Deposit request is ${payload.new.status}!`, payload.new.status === 'APPROVED' ? 'success' : 'danger');
+                    }
+                })
+                .subscribe();
+
+            // 2. Tickets Realtime listener
+            client
+                .channel(`public:tickets:user_id=eq.${lastProfileData.id}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tickets',
+                    filter: `user_id=eq.${lastProfileData.id}`
+                }, (payload) => {
+                    loadTickets();
+                    if (payload.eventType === 'UPDATE' && payload.new && payload.new.status) {
+                        showToast(`Support Ticket status updated to ${payload.new.status}`, 'info');
+                    }
+                })
+                .subscribe();
+        });
+    }
+
     function loadProfile(callback = null) {
         authFetch('/api/user/profile')
             .then(res => res.json())
@@ -470,6 +605,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     lastProfileData = data.profile;
                     renderProfileDetails();
+                    if (lastProfileData && lastProfileData.id) {
+                        setupGlobalRealtime();
+                    }
                 } else {
                     showAlert(data.message, 'danger');
                 }
@@ -486,8 +624,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const depositAmountInput = document.getElementById('depositAmount');
         if (depositAmountLabel && depositAmountInput) {
             const selectedCurrency = currencySelector.value || 'PKR';
-            depositAmountLabel.textContent = `Amount (${selectedCurrency})`;
-            depositAmountInput.placeholder = `Enter Amount in ${selectedCurrency}`;
+            const pkrRate = exchangeRates['PKR'].rate;
+            const selectedRate = exchangeRates[selectedCurrency].rate;
+            const symbol = exchangeRates[selectedCurrency].symbol;
+            
+            const minDepositVal = 50.0 * (selectedRate / pkrRate);
+            
+            depositAmountLabel.innerHTML = `Amount (${selectedCurrency}) <span class="text-danger small ms-1">(Min: ${symbol}${minDepositVal.toFixed(2)})</span>`;
+            depositAmountInput.placeholder = `Min ${symbol}${minDepositVal.toFixed(2)} or more`;
         }
     }
 
@@ -1087,6 +1231,16 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const pkrRate = exchangeRates['PKR'].rate;
+        const selectedRate = exchangeRates[currency].rate;
+        const symbol = exchangeRates[currency].symbol;
+        const minDepositVal = 50.0 * (selectedRate / pkrRate);
+
+        if (amount < minDepositVal) {
+            showAlert(`Minimum deposit amount is ${symbol}${minDepositVal.toFixed(2)}.`, 'warning');
+            return;
+        }
+
         submitDepositBtn.disabled = true;
         submitDepositBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
 
@@ -1316,7 +1470,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loadChatMessages(ticketId);
 
-        // Auto-poll fallback
+        // Auto-poll fallback (as backup or mock mode)
         if (chatInterval) clearInterval(chatInterval);
         chatInterval = setInterval(() => {
             loadChatMessages(ticketId);
@@ -1325,6 +1479,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set up Supabase Realtime channel listener
         initSupabaseClient().then(client => {
             if (!client) return;
+            
+            // Disable backup polling if Realtime is functional
+            if (chatInterval) {
+                clearInterval(chatInterval);
+                chatInterval = null;
+            }
+
             if (realtimeChannel) {
                 client.removeChannel(realtimeChannel);
             }
@@ -1337,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     filter: `ticket_id=eq.${ticketId}`
                 }, (payload) => {
                     loadChatMessages(ticketId);
+                    showToast('New message received!', 'info');
                 })
                 .on('postgres_changes', {
                     event: 'UPDATE',
@@ -1352,6 +1514,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             document.getElementById('chatInputSubmitBtn').disabled = true;
                             closedMsgEl.classList.remove('d-none');
                         }
+                        showToast(`Ticket status is now ${payload.new.status}`, 'info');
                     }
                 })
                 .subscribe();

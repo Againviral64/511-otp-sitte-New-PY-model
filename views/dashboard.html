@@ -1,15 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script>
-        window.onerror = function(message, source, lineno, colno, error) {
-            alert("JS Error:\n" + message + "\nLine: " + lineno + "\nSource: " + source);
-            return false;
-        };
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Nova OTP Provider</title>
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nova OTP">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    console.log('ServiceWorker registered:', reg.scope);
+                }).catch((err) => {
+                    console.warn('ServiceWorker registration failed:', err);
+                });
+            });
+        }
+    </script>
     
     <!-- Bootstrap, FontAwesome, Google Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -278,6 +290,11 @@
             </div>
             
             <div class="d-flex align-items-center gap-3">
+                <!-- Dark Mode Toggle -->
+                <button class="btn btn-outline-secondary border-0 p-0 d-flex align-items-center justify-content-center" id="themeToggleBtn" title="Toggle Dark/Light Mode" style="border-radius: 50%; width: 38px; height: 38px; color: var(--dark); transition: background-color 0.2s;">
+                    <i class="fa-solid fa-moon fs-5" id="themeToggleIcon"></i>
+                </button>
+
                 <!-- Currency Selector -->
                 <div class="d-flex align-items-center">
                     <select class="form-select form-select-sm" id="currencySelector" style="width: 110px; border-radius: 50px; font-weight: 600; border-color: #cbd5e1;">
@@ -407,7 +424,7 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
+                    <div class="table-responsive table-responsive-cards">
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
@@ -434,7 +451,7 @@
                 <div class="main-card p-4">
                     <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>My Orders Log</h3>
                     
-                    <div class="table-responsive">
+                    <div class="table-responsive table-responsive-cards">
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
@@ -515,7 +532,7 @@
                     <div class="col-lg-6">
                         <div class="main-card p-4">
                             <h3 class="section-title"><i class="fa-solid fa-clock text-primary me-2"></i>Deposit History</h3>
-                            <div class="table-responsive">
+                            <div class="table-responsive table-responsive-cards">
                                 <table class="table table-hover align-middle">
                                     <thead>
                                         <tr>
@@ -623,7 +640,7 @@
                         <div class="main-card p-4" id="ticketListCard">
                             <h3 class="section-title"><i class="fa-solid fa-list-check text-primary me-2"></i>Support Tickets</h3>
                             
-                            <div class="table-responsive">
+                            <div class="table-responsive table-responsive-cards">
                                 <table class="table table-hover align-middle">
                                     <thead>
                                         <tr>
@@ -792,6 +809,35 @@
     " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 15px rgba(0,0,0,0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.3)';">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
+
+    <!-- Sleek Toast Notification Container -->
+    <div id="toastContainer" class="toast-container-custom"></div>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav">
+        <div class="mobile-bottom-nav-container">
+            <a href="#" class="mobile-nav-link active" data-pane="otp">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Get SMS</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-pane="services">
+                <i class="fa-solid fa-list"></i>
+                <span>Rates</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-pane="orders">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>History</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-pane="deposit">
+                <i class="fa-solid fa-wallet"></i>
+                <span>Deposit</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-pane="tickets">
+                <i class="fa-solid fa-headset"></i>
+                <span>Support</span>
+            </a>
+        </div>
+    </nav>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

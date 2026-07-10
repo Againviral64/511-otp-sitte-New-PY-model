@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import supabase, { isMock } from '@/lib/db';
 import { verifyAuth } from '@/lib/middleware';
+import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
+import { sanitizeText, sanitizeAndTruncate } from '@/lib/sanitize';
 
 // Local Memory mock tickets
 let mockTickets = [];
@@ -19,7 +21,8 @@ export async function GET(request) {
             .from('tickets')
             .select('*')
             .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .limit(50);
 
         if (error) return NextResponse.json({ success: false, message: error.message });
 
@@ -31,6 +34,13 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
+        // Rate limit check
+        const clientKey = getClientKey(request);
+        const limit = checkRateLimit(`tickets:${clientKey}`, RATE_LIMITS.TICKETS.maxRequests, RATE_LIMITS.TICKETS.windowMs);
+        if (!limit.allowed) {
+            return NextResponse.json({ success: false, message: `Too many ticket requests. Please wait ${Math.ceil(limit.retryAfterMs / 1000)} seconds.` }, { status: 429 });
+        }
+
         const user = await verifyAuth(request);
         const { title, category, message, proof_image } = await request.json();
 
@@ -38,13 +48,18 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'All fields are required.' });
         }
 
+        // Sanitize inputs
+        const cleanTitle = sanitizeAndTruncate(title, 255);
+        const cleanCategory = sanitizeText(category);
+        const cleanMessage = sanitizeAndTruncate(message, 2000);
+
         if (isMock || !supabase) {
             const ticketId = mockTickets.length + 1;
             const newTicket = {
                 id: ticketId,
                 user_id: user.id,
-                title,
-                category,
+                title: cleanTitle,
+                category: cleanCategory,
                 status: 'OPEN',
                 proof_image: proof_image || null,
                 created_at: new Date().toISOString()
@@ -56,7 +71,7 @@ export async function POST(request) {
                 ticket_id: ticketId,
                 sender_id: user.id,
                 sender_email: user.email,
-                message: message.trim(),
+                message: cleanMessage,
                 created_at: new Date().toISOString()
             };
             mockTicketMessages.push(newMessage);
@@ -69,8 +84,8 @@ export async function POST(request) {
             .from('tickets')
             .insert([{
                 user_id: user.id,
-                title,
-                category,
+                title: cleanTitle,
+                category: cleanCategory,
                 status: 'OPEN',
                 proof_image: proof_image || null
             }])
@@ -87,7 +102,7 @@ export async function POST(request) {
             .insert([{
                 ticket_id: ticket.id,
                 sender_id: user.id,
-                message: message.trim()
+                message: cleanMessage
             }]);
 
         if (msgError) {
