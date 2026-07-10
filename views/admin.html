@@ -142,10 +142,8 @@
             </a>
             
             <div class="d-flex align-items-center gap-3">
-                <select class="form-select form-select-sm" id="adminCurrencySelector" style="width: 105px; border-radius: 50px; font-weight: 600; border-color: #475569; background-color: #1e293b; color: white;">
-                    <option value="USD" selected>$ USD</option>
-                    <option value="PKR">₨ PKR</option>
-                </select>
+                <span class="badge bg-light text-dark border px-3 py-2 fw-semibold currency-badge-container" style="border-radius: 50px; font-size: 0.85rem; border-color: #475569 !important; background-color: #1e293b !important; color: white !important;">Currency: PKR</span>
+                <input type="hidden" id="adminCurrencySelector" value="PKR">
                 <span class="badge bg-primary px-3 py-2" id="adminBadge" style="border-radius: 50px;">Admin Account</span>
                 <button class="btn btn-outline-light" id="logoutBtn" style="border-radius: var(--radius);">
                     <i class="fa-solid fa-right-from-bracket"></i>
@@ -208,21 +206,21 @@
                     <div class="col-md-3">
                         <div class="main-card p-4 text-center" style="border-left: 4px solid #198754;">
                             <div class="text-secondary small fw-bold text-uppercase mb-2">Revenue Today</div>
-                            <h2 class="fw-bold mb-0 text-success" id="statRevenueToday">₨ 0.00</h2>
+                            <h2 class="fw-bold mb-0 text-success" id="statRevenueToday">Rs 0.00</h2>
                         </div>
                     </div>
                     <!-- Column 3: Today's Cost -->
                     <div class="col-md-3">
                         <div class="main-card p-4 text-center" style="border-left: 4px solid #ffc107;">
                             <div class="text-secondary small fw-bold text-uppercase mb-2">Cost Today</div>
-                            <h2 class="fw-bold mb-0 text-warning" id="statCostToday">₨ 0.00</h2>
+                            <h2 class="fw-bold mb-0 text-warning" id="statCostToday">Rs 0.00</h2>
                         </div>
                     </div>
                     <!-- Column 4: Today's Profit -->
                     <div class="col-md-3">
                         <div class="main-card p-4 text-center" style="border-left: 4px solid #0dcaf0;">
                             <div class="text-secondary small fw-bold text-uppercase mb-2">Profit Today</div>
-                            <h2 class="fw-bold mb-0 text-info" id="statProfitToday">₨ 0.00</h2>
+                            <h2 class="fw-bold mb-0 text-info" id="statProfitToday">Rs 0.00</h2>
                         </div>
                     </div>
                 </div>
@@ -239,21 +237,21 @@
                     <div class="col-md-3">
                         <div class="main-card p-4 text-center" style="border-left: 4px solid #198754;">
                             <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Revenue</div>
-                            <h2 class="fw-bold mb-0 text-success" id="statRevenueLifetime">₨ 0.00</h2>
+                            <h2 class="fw-bold mb-0 text-success" id="statRevenueLifetime">Rs 0.00</h2>
                         </div>
                     </div>
                     <!-- Column 3: Lifetime Cost -->
                     <div class="col-md-3">
                         <div class="main-card p-4 text-center" style="border-left: 4px solid #ffc107;">
                             <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Cost</div>
-                            <h2 class="fw-bold mb-0 text-warning" id="statCostLifetime">₨ 0.00</h2>
+                            <h2 class="fw-bold mb-0 text-warning" id="statCostLifetime">Rs 0.00</h2>
                         </div>
                     </div>
                     <!-- Column 4: Lifetime Profit -->
                     <div class="col-md-3">
                         <div class="main-card p-4 text-center" style="border-left: 4px solid #0dcaf0;">
                             <div class="text-secondary small fw-bold text-uppercase mb-2">Lifetime Profit</div>
-                            <h2 class="fw-bold mb-0 text-info" id="statProfitLifetime">₨ 0.00</h2>
+                            <h2 class="fw-bold mb-0 text-info" id="statProfitLifetime">Rs 0.00</h2>
                         </div>
                     </div>
                 </div>
@@ -266,7 +264,7 @@
                                 <h4 class="card-title mb-2 text-dark"><i class="fa-solid fa-vault text-primary me-2"></i>Total Users Credit Liability</h4>
                                 <p class="text-secondary small mb-0">Total combined balance remaining across all user accounts in the entire panel.</p>
                             </div>
-                            <h2 class="fw-bold text-danger mb-0 text-end" id="statTotalLiability">₨ 0.00</h2>
+                             <h2 class="fw-bold text-danger mb-0 text-end" id="statTotalLiability">Rs 0.00</h2>
                         </div>
                     </div>
                 </div>
@@ -338,7 +336,7 @@
                                             <th>User ID / Email</th>
                                             <th>Method</th>
                                             <th>Amount (PKR)</th>
-                                            <th>Transaction ID / Screenshot</th>
+                                            <th>Account Name / Screenshot</th>
                                             <th class="text-end">Actions</th>
                                         </tr>
                                     </thead>
@@ -368,7 +366,7 @@
                                             <th>User Email / ID</th>
                                             <th>Payment Method</th>
                                             <th>Amount (PKR)</th>
-                                            <th>Transaction Identifier</th>
+                                            <th>Account Name / Note</th>
                                             <th>Status</th>
                                             <th>Processed Date</th>
                                         </tr>
@@ -466,8 +464,8 @@
                                     <th>Service ID</th>
                                     <th>Service App Name</th>
                                     <th>Operator Group</th>
-                                    <th>Cost Price (USD)</th>
-                                    <th>Sell Price (USD)</th>
+                                    <th>Cost Price (PKR)</th>
+                                    <th>Sell Price (PKR)</th>
                                     <th class="text-end">Edit Pricing</th>
                                 </tr>
                             </thead>
@@ -591,7 +589,7 @@
                                     <th>App / Group</th>
                                     <th>Phone Number</th>
                                     <th>OTP Details</th>
-                                    <th>Price (USD)</th>
+                                    <th>Price (PKR)</th>
                                     <th>Verification Status</th>
                                     <th>Created At</th>
                                     <th>Code URL</th>
@@ -1041,29 +1039,28 @@
             // Currency configuration
             const exchangeRates = {
                 USD: { rate: 1.0, symbol: '$' },
-                PKR: { rate: 278.50, symbol: '₨ ' }
+                PKR: { rate: 278.50, symbol: 'Rs ' },
+                INR: { rate: 83.40, symbol: '₹ ' },
+                BDT: { rate: 117.20, symbol: '৳ ' },
+                NPR: { rate: 133.50, symbol: 'रू ' },
+                RUB: { rate: 88.30, symbol: '₽ ' }
             };
 
             const currencySelector = document.getElementById('adminCurrencySelector');
 
             function getActiveCurrency() {
-                return currencySelector.value || 'USD';
+                return 'PKR';
             }
 
             function formatPrice(usdAmount) {
                 const curr = getActiveCurrency();
                 const rate = exchangeRates[curr].rate;
                 const symbol = exchangeRates[curr].symbol;
-                return `${symbol}${(parseFloat(usdAmount || 0) * rate).toFixed(3)}`;
+                return `${symbol}${(parseFloat(usdAmount || 0) * rate).toFixed(2)}`;
             }
 
             function formatOrderPrice(pkrAmount) {
-                const curr = getActiveCurrency();
-                if (curr === 'USD') {
-                    return `$${(parseFloat(pkrAmount || 0) / 278.50).toFixed(2)}`;
-                } else {
-                    return `₨ ${parseFloat(pkrAmount || 0).toFixed(2)}`;
-                }
+                return `Rs ${parseFloat(pkrAmount || 0).toFixed(2)}`;
             }
 
             currencySelector.addEventListener('change', () => {
@@ -1142,16 +1139,16 @@
                         if (data.success && data.stats) {
                             const s = data.stats;
                             document.getElementById('statOrdersToday').textContent = s.orders_today;
-                            document.getElementById('statRevenueToday').textContent = `₨ ${parseFloat(s.revenue_today).toFixed(2)}`;
-                            document.getElementById('statCostToday').textContent = `₨ ${parseFloat(s.cost_today).toFixed(2)}`;
-                            document.getElementById('statProfitToday').textContent = `₨ ${parseFloat(s.profit_today).toFixed(2)}`;
+                            document.getElementById('statRevenueToday').textContent = `Rs ${parseFloat(s.revenue_today).toFixed(2)}`;
+                            document.getElementById('statCostToday').textContent = `Rs ${parseFloat(s.cost_today).toFixed(2)}`;
+                            document.getElementById('statProfitToday').textContent = `Rs ${parseFloat(s.profit_today).toFixed(2)}`;
 
                             document.getElementById('statOrdersLifetime').textContent = s.orders_lifetime;
-                            document.getElementById('statRevenueLifetime').textContent = `₨ ${parseFloat(s.revenue_lifetime).toFixed(2)}`;
-                            document.getElementById('statCostLifetime').textContent = `₨ ${parseFloat(s.cost_lifetime).toFixed(2)}`;
-                            document.getElementById('statProfitLifetime').textContent = `₨ ${parseFloat(s.profit_lifetime).toFixed(2)}`;
+                            document.getElementById('statRevenueLifetime').textContent = `Rs ${parseFloat(s.revenue_lifetime).toFixed(2)}`;
+                            document.getElementById('statCostLifetime').textContent = `Rs ${parseFloat(s.cost_lifetime).toFixed(2)}`;
+                            document.getElementById('statProfitLifetime').textContent = `Rs ${parseFloat(s.profit_lifetime).toFixed(2)}`;
 
-                            document.getElementById('statTotalLiability').textContent = `₨ ${parseFloat(s.total_liability).toFixed(2)}`;
+                            document.getElementById('statTotalLiability').textContent = `Rs ${parseFloat(s.total_liability).toFixed(2)}`;
 
                             if (data.daily_stats) {
                                 renderOverviewCharts(data.daily_stats);
@@ -1183,15 +1180,21 @@
                             }
                             data.deposits.forEach(d => {
                                 const tr = document.createElement('tr');
+                                const depCurrency = d.currency || 'PKR';
+                                let amt = parseFloat(d.amount);
+                                if (depCurrency !== 'PKR') {
+                                    const rate = exchangeRates[depCurrency]?.rate || 1.0;
+                                    amt = amt * (278.50 / rate);
+                                }
                                 tr.innerHTML = `
                                     <td>
                                         <div class="fw-bold">${d.user_email}</div>
                                         <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${d.user_id}</div>
                                     </td>
                                     <td><span class="badge bg-secondary font-monospace">${d.method}</span></td>
-                                    <td><strong>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USD'}</strong></td>
+                                    <td><strong>Rs ${amt.toFixed(2)}</strong></td>
                                     <td>
-                                        <div>TxID: <code>${d.tx_id}</code></div>
+                                        <div>Account Name: <code>${d.tx_id && d.tx_id.startsWith('NP-') ? 'Not Provided' : d.tx_id}</code></div>
                                         ${d.proof_image ? `
                                             <div class="mt-1">
                                                 <span class="text-success small fw-semibold"><i class="fa-solid fa-circle-check me-1"></i>Proof Attached</span>
@@ -1233,15 +1236,21 @@
                             data.deposits.forEach(d => {
                                 const tr = document.createElement('tr');
                                 const statusClass = d.status === 'APPROVED' ? 'badge-approved' : 'badge-rejected';
+                                const depCurrency = d.currency || 'PKR';
+                                let amt = parseFloat(d.amount);
+                                if (depCurrency !== 'PKR') {
+                                    const rate = exchangeRates[depCurrency]?.rate || 1.0;
+                                    amt = amt * (278.50 / rate);
+                                }
                                 tr.innerHTML = `
                                     <td>
                                         <div class="fw-bold">${d.user_email}</div>
                                         <div class="small text-secondary font-monospace" style="font-size:0.75rem;">${d.user_id}</div>
                                     </td>
                                     <td><span class="badge bg-secondary font-monospace">${d.method}</span></td>
-                                    <td><strong>${parseFloat(d.amount).toFixed(2)} ${d.currency || 'USD'}</strong></td>
+                                    <td><strong>Rs ${amt.toFixed(2)}</strong></td>
                                     <td>
-                                        <div>TxID: <code>${d.tx_id}</code></div>
+                                        <div>Account Name: <code>${d.tx_id && d.tx_id.startsWith('NP-') ? 'Not Provided' : d.tx_id}</code></div>
                                         ${d.proof_image ? `
                                             <div class="mt-1">
                                                 <span class="text-success small fw-semibold"><i class="fa-solid fa-circle-check me-1"></i>Proof Attached</span>
@@ -1726,7 +1735,8 @@
                         table: 'deposits'
                     }, (payload) => {
                         showAdminToast(`New Deposit Request from user: ${payload.new.user_email || 'User'}!`, 'info');
-                        showSystemNotification('New Deposit Request', `Amount: $${payload.new.amount} - TxID: ${payload.new.tx_id}`);
+                        const showTxId = payload.new.tx_id && payload.new.tx_id.startsWith('NP-') ? 'Not Provided' : payload.new.tx_id;
+                        showSystemNotification('New Deposit Request', `Amount: Rs ${payload.new.amount} - Account Name: ${showTxId}`);
                         playChime();
                         loadAdminData(); // Reload stats and list view
                     })

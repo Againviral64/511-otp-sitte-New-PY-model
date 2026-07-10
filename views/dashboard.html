@@ -94,6 +94,33 @@
             border-left-color: var(--primary);
             font-weight: 600;
         }
+        /* Mobile logout button — always styled, only hidden on desktop */
+        .mobile-header-logout-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+        .mobile-header-logout-btn:hover {
+            background-color: #b02a37;
+            transform: scale(0.97);
+        }
+        .mobile-header-logout-btn i {
+            font-size: 0.9rem;
+        }
+        @media (min-width: 1024px) {
+            .mobile-logout-item { display: none !important; }
+            .mobile-header-logout-btn { display: none !important; }
+        }
         .sidebar-user {
             padding: 1.25rem;
             border-top: 1px solid #1e293b;
@@ -214,6 +241,145 @@
             border-top: 1px solid var(--border);
             background: white;
         }
+
+        /* ========================================================
+           MOBILE VIEWPORT OPTIMIZATIONS (ALL PAGES EXCEPT GET OTP)
+           ======================================================== */
+        @media (max-width: 1023px) {
+            /* 1. Spacing and Card overrides across all secondary panels */
+            #pane-services, #pane-orders, #pane-deposit, #pane-api, #pane-tickets, #pane-settings {
+                padding: 0 !important;
+            }
+            #pane-services .main-card, 
+            #pane-orders .main-card, 
+            #pane-deposit .main-card, 
+            #pane-api .main-card, 
+            #pane-tickets .main-card, 
+            #pane-settings .main-card {
+                padding: 1.25rem !important;
+                margin-bottom: 1rem !important;
+            }
+            #pane-services .section-title,
+            #pane-orders .section-title,
+            #pane-deposit .section-title,
+            #pane-api .section-title,
+            #pane-tickets .section-title,
+            #pane-settings .section-title,
+            #pane-tickets .card-title {
+                font-size: 1.15rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+
+            /* 2. Form controls & button optimizations for Secondary Panels */
+            #pane-deposit .form-control,
+            #pane-deposit .form-select,
+            #pane-tickets .form-control,
+            #pane-tickets .form-select,
+            #pane-settings .form-control,
+            #pane-settings .form-select {
+                padding: 0.55rem 0.75rem !important;
+                font-size: 0.85rem !important;
+                border-radius: 8px !important;
+            }
+            #pane-deposit label,
+            #pane-tickets label,
+            #pane-settings label {
+                font-size: 0.8rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+            #pane-deposit .mb-3,
+            #pane-deposit .mb-4,
+            #pane-tickets .mb-3,
+            #pane-tickets .mb-4,
+            #pane-settings .mb-3,
+            #pane-settings .mb-4 {
+                margin-bottom: 0.75rem !important;
+            }
+
+            /* Support message textarea height reduction */
+            #ticketMessage {
+                height: 90px !important;
+                min-height: 90px !important;
+            }
+
+            /* Buttons height and padding reduction */
+            #submitTicketBtn, #submitDepositBtn, #rotateApiKeyBtn {
+                padding: 0.65rem 1rem !important;
+                font-size: 0.9rem !important;
+                height: auto !important;
+            }
+
+            /* 3. Table to Cards Base Layout Fixes for Mobile Viewports */
+            .table-responsive-cards tr {
+                background: #1e293b !important;
+                border: 1px solid #334155 !important;
+                border-radius: 12px !important;
+                padding: 10px 12px !important;
+                margin-bottom: 10px !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            }
+            body.dark-mode .table-responsive-cards tr {
+                background: #1e293b !important;
+                border-color: #334155 !important;
+            }
+            .table-responsive-cards td {
+                background: transparent !important;
+                background-color: transparent !important;
+                color: #cbd5e1 !important;
+                padding: 4px 0 !important;
+                font-size: 0.82rem !important;
+            }
+            .table-responsive-cards td::before {
+                color: #94a3b8 !important;
+                font-size: 0.72rem !important;
+            }
+
+            /* 4. Support Ticket Cards specific layout adjustments */
+            #ticketsTableBody tr {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+            }
+            #ticketsTableBody td {
+                padding: 3px 0 !important;
+            }
+            #ticketsTableBody td:nth-of-type(1) {
+                word-break: break-all !important;
+                white-space: normal !important;
+            }
+            #ticketsTableBody td .btn {
+                padding: 3px 10px !important;
+                font-size: 0.75rem !important;
+                border-radius: 6px !important;
+            }
+            #ticketsTableBody td .badge {
+                font-size: 0.7rem !important;
+                padding: 3px 6px !important;
+            }
+
+            /* 5. Deposit History Cards specific layout adjustments */
+            #depositHistoryTableBody tr {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+            }
+            #depositHistoryTableBody td {
+                padding: 3px 0 !important;
+            }
+            #depositHistoryTableBody td .btn {
+                padding: 2px 6px !important;
+                font-size: 0.75rem !important;
+                border-radius: 6px !important;
+            }
+
+            /* Hide redundant heading and optional note wrapper to prevent scrolling on mobile */
+            #pane-deposit .section-title {
+                display: none !important;
+            }
+            #paymentNoteGroup {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -261,8 +427,14 @@
                 <a class="sidebar-link" href="#" data-pane="settings">
                     <i class="fa-solid fa-gear me-3"></i>Account Settings
                 </a>
-            </li>
         </ul>
+
+        <div class="mobile-logout-wrapper mobile-logout-item">
+            <hr class="dropdown-divider border-secondary mx-3 my-2" style="opacity: 0.15;">
+            <a class="sidebar-link text-danger fw-semibold" href="#" id="mobileLogoutBtn">
+                <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i>Logout
+            </a>
+        </div>
 
         <div class="sidebar-user">
             <div class="d-flex align-items-center gap-2">
@@ -295,23 +467,22 @@
                     <i class="fa-solid fa-moon fs-5" id="themeToggleIcon"></i>
                 </button>
 
-                <!-- Currency Selector -->
-                <div class="d-flex align-items-center">
-                    <select class="form-select form-select-sm" id="currencySelector" style="width: 110px; border-radius: 50px; font-weight: 600; border-color: #cbd5e1;">
-                        <option value="PKR" selected>₨ PKR</option>
-                        <option value="USD">$ USD</option>
-                        <option value="INR">₹ INR</option>
-                        <option value="BDT">৳ BDT</option>
-                        <option value="NPR">रू NPR</option>
-                        <option value="RUB">₽ RUB</option>
-                    </select>
+                <!-- Mobile Top Header Logout Button -->
+                <button class="mobile-header-logout-btn" id="mobileHeaderLogoutBtn" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Logout</span>
+                </button>
+
+                <div class="d-flex align-items-center me-2">
+                    <span class="badge bg-light text-dark border px-3 py-2 fw-semibold currency-badge-container" style="border-radius: 50px; font-size: 0.85rem;">Currency: PKR</span>
+                    <input type="hidden" id="currencySelector" value="PKR">
                 </div>
 
                 <!-- Balance Display -->
                 <div class="balance-card">
                     <div>
                         <div class="balance-label">Balance</div>
-                        <div class="balance-value" id="balanceAmount">$0.000</div>
+                        <div class="balance-value" id="balanceAmount">Rs 0.00</div>
                     </div>
                     <button class="btn btn-refresh" id="refreshBalanceBtn" title="Refresh Balance">
                         <i class="fa-solid fa-rotate"></i>
@@ -322,7 +493,7 @@
                 <div class="balance-card bg-light border" style="box-shadow: none;">
                     <div>
                         <div class="balance-label" style="color: #64748b;">Total Spent</div>
-                        <div class="balance-value text-dark" id="spendAmount">$0.000</div>
+                        <div class="balance-value text-dark" id="spendAmount">Rs 0.00</div>
                     </div>
                 </div>
             </div>
@@ -356,7 +527,7 @@
                                 </div>
 
                                 <div class="price-box mb-4 d-none" id="priceDisplay">
-                                    Price: $0.000
+                                    Price: Rs 0.00
                                 </div>
 
                                 <button class="btn btn-primary-custom w-100 py-3 fs-5 m-0" id="buyNumberBtn">
@@ -497,18 +668,18 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="depositAmount" class="form-label" id="depositAmountLabel">Amount (USD equivalent)</label>
-                                <input type="number" step="0.01" min="1" class="form-control" id="depositAmount" placeholder="e.g. 10">
+                                <label for="depositAmount" class="form-label" id="depositAmountLabel">Amount (PKR)</label>
+                                <input type="number" step="0.01" min="1" class="form-control" id="depositAmount" placeholder="e.g. 500">
                             </div>
 
                             <div class="mb-3">
-                                <label for="depositTxId" class="form-label fw-semibold">Transaction ID (TxID)</label>
-                                <input type="text" class="form-control" id="depositTxId" placeholder="e.g. 82730198273" style="border-radius: 8px;">
+                                <label for="depositTxId" class="form-label fw-semibold">Account Name (Optional)</label>
+                                <input type="text" class="form-control" id="depositTxId" placeholder="e.g. John Doe" style="border-radius: 8px;">
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label d-block fw-semibold">Payment Proof Screenshot</label>
-                                <input type="file" id="depositProofFile" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp" style="border-radius: 8px;">
+                                <label class="form-label d-block fw-semibold">Payment Proof Screenshot <span class="text-danger">*</span></label>
+                                <input type="file" id="depositProofFile" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp" style="border-radius: 8px;" required>
                                 <div class="form-text text-muted" style="font-size: 0.8rem;">Accepted formats: JPG, JPEG, PNG, WEBP (Max 5MB)</div>
                                 <div id="depositProofPreviewContainer" class="mt-2 d-none">
                                     <div class="card p-2 bg-light border-0" style="border-radius: 10px;">
@@ -518,7 +689,7 @@
                                 </div>
                             </div>
 
-                            <div class="mb-4">
+                            <div class="mb-4" id="paymentNoteGroup">
                                 <label for="depositScreenshot" class="form-label fw-semibold">Payment Note (Optional)</label>
                                 <textarea class="form-control" id="depositScreenshot" rows="2" placeholder="Write any transaction details or receipts info..." style="border-radius: 8px;"></textarea>
                             </div>
@@ -536,7 +707,7 @@
                                 <table class="table table-hover align-middle">
                                     <thead>
                                         <tr>
-                                            <th>TxID</th>
+                                            <th>Account Name</th>
                                             <th>Method</th>
                                             <th>Amount</th>
                                             <th>Proof</th>

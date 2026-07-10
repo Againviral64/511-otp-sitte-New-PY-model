@@ -24,7 +24,15 @@ export async function GET(request) {
             .range(offset, offset + limit - 1);
 
         if (error) return NextResponse.json({ success: false, message: error.message });
-        return NextResponse.json({ success: true, deposits: data, page, total: count || 0 });
+        
+        const mappedData = data.map(d => {
+            const mapped = { ...d };
+            if (d.account_name !== undefined) {
+                mapped.tx_id = d.account_name;
+            }
+            return mapped;
+        });
+        return NextResponse.json({ success: true, deposits: mappedData, page, total: count || 0 });
     } catch (err) {
         return NextResponse.json({ success: false, message: err.message }, { status: 401 });
     }

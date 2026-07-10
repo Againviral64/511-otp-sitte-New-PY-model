@@ -16,7 +16,7 @@ export async function POST(request) {
         const user = await verifyAuth(request);
         const { method, amount, tx_id, screenshot_url, currency, proof_image, payment_note } = await request.json();
 
-        if (!method || !amount || !tx_id) {
+        if (!method || !amount) {
             return NextResponse.json({ success: false, message: 'Missing payment details.' });
         }
 
@@ -26,9 +26,15 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: amountCheck.message });
         }
 
-        const cleanTxId = sanitizeTxId(tx_id);
-        if (!cleanTxId || cleanTxId.length < 3) {
-            return NextResponse.json({ success: false, message: 'Invalid Transaction ID format. Must be at least 3 alphanumeric characters.' });
+        let cleanTxId;
+        if (!tx_id || tx_id.trim() === '') {
+            // Generate a unique value to satisfy the unique database constraint on tx_id/account_name
+            cleanTxId = `NP-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+        } else {
+            cleanTxId = sanitizeTxId(tx_id);
+            if (!cleanTxId || cleanTxId.length < 3) {
+                return NextResponse.json({ success: false, message: 'Invalid Account Name format. Must be at least 3 characters.' });
+            }
         }
 
         const cleanMethod = sanitizeText(method);
@@ -55,6 +61,7 @@ export async function POST(request) {
 
         let insertErr;
         try {
+            // Try inserting using 'account_name' first (in case table has been renamed)
             const { error } = await supabase
                 .from('deposits')
                 .insert([{
@@ -62,26 +69,47 @@ export async function POST(request) {
                     method: cleanMethod,
                     amount: amountCheck.value,
                     currency: currency || 'USD',
-                    tx_id: cleanTxId,
+                    account_name: cleanTxId,
                     screenshot_url: proof_image || screenshot_url || null,
                     proof_image: proof_image || null,
                     payment_note: cleanNote,
                     status: 'PENDING'
                 }]);
+            if (error && (error.code === 'PGRST204' || error.message.includes('account_name') || error.message.includes('column'))) {
+                throw new Error('Fallback to tx_id');
+            }
             insertErr = error;
         } catch (dbErr) {
-            const { error } = await supabase
-                .from('deposits')
-                .insert([{
-                    user_id: user.id,
-                    method: cleanMethod,
-                    amount: amountCheck.value,
-                    currency: currency || 'USD',
-                    tx_id: cleanTxId,
-                    screenshot_url: proof_image || screenshot_url || null,
-                    status: 'PENDING'
-                }]);
-            insertErr = error;
+            // Fall back to original 'tx_id' column schema
+            try {
+                const { error } = await supabase
+                    .from('deposits')
+                    .insert([{
+                        user_id: user.id,
+                        method: cleanMethod,
+                        amount: amountCheck.value,
+                        currency: currency || 'USD',
+                        tx_id: cleanTxId,
+                        screenshot_url: proof_image || screenshot_url || null,
+                        proof_image: proof_image || null,
+                        payment_note: cleanNote,
+                        status: 'PENDING'
+                    }]);
+                insertErr = error;
+            } catch (fallbackErr) {
+                const { error } = await supabase
+                    .from('deposits')
+                    .insert([{
+                        user_id: user.id,
+                        method: cleanMethod,
+                        amount: amountCheck.value,
+                        currency: currency || 'USD',
+                        tx_id: cleanTxId,
+                        screenshot_url: proof_image || screenshot_url || null,
+                        status: 'PENDING'
+                    }]);
+                insertErr = error;
+            }
         }
 
         if (insertErr) {

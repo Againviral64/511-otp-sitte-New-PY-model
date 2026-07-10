@@ -394,6 +394,7 @@ img {
 @media (max-width: 1023px) {
     /* Drawer Sidebar Menu for User Dashboard */
     .sidebar {
+        width: 250px !important;
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 10px 0 30px rgba(15, 23, 42, 0.25);
@@ -403,6 +404,18 @@ img {
     }
     .sidebar #sidebarCloseBtn {
         display: block !important;
+    }
+    .sidebar-user #logoutBtn {
+        display: none !important;
+    }
+    .mobile-logout-item {
+        display: block !important;
+    }
+    .currency-badge-container {
+        display: none !important;
+    }
+    .mobile-header-logout-btn {
+        display: inline-flex !important;
     }
     .workspace {
         margin-left: 0 !important;
@@ -445,6 +458,82 @@ img {
     }
     .modal-body {
         padding: 1.25rem !important;
+    }
+
+    /* Mobile Dashboard UI Refinement overrides */
+    .pane-content#pane-otp .main-card {
+        padding: 1.25rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+    .pane-content#pane-otp .card-title {
+        font-size: 1.15rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    #apiOrderForm .mb-3,
+    #apiOrderForm .mb-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    #apiOrderForm .form-label {
+        font-size: 0.8rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    #apiOrderForm .form-select {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.85rem !important;
+        height: auto !important;
+    }
+
+    #buyNumberBtn {
+        padding: 0.65rem 1rem !important;
+        font-size: 0.95rem !important;
+        border-radius: 8px !important;
+    }
+    #buyNumberBtn i {
+        font-size: 0.9rem !important;
+    }
+
+    .pane-content#pane-otp .row.mb-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    .pane-content#pane-otp .col-6 .small {
+        font-size: 0.75rem !important;
+    }
+    .pane-content#pane-otp .col-6 .fw-bold {
+        font-size: 0.9rem !important;
+    }
+
+    .number-box {
+        min-height: 55px !important;
+        padding: 0.75rem !important;
+        font-size: 1.35rem !important;
+        border-radius: 8px !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .sms-status-container {
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        border-radius: 8px !important;
+    }
+    .sms-status-container .form-label.mt-3 {
+        margin-top: 0.5rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .otp-box {
+        font-size: 1.75rem !important;
+        margin: 0.5rem 0 !important;
+        min-height: 40px !important;
+    }
+
+    #copyOtpBtn {
+        padding: 0.55rem 1rem !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
+    }
+    #copyOtpBtn i {
+        font-size: 0.8rem !important;
     }
 }
 
@@ -500,10 +589,17 @@ img {
     #themeToggleBtn {
         position: absolute !important;
         top: 10px !important;
-        right: 120px !important;
+        right: 110px !important;
         margin: 0 !important;
         width: 36px !important;
         height: 36px !important;
+    }
+    .mobile-header-logout-btn {
+        position: absolute !important;
+        top: 10px !important;
+        right: 12px !important;
+        margin: 0 !important;
+        display: inline-flex !important;
     }
     .workspace-header .d-flex:nth-child(2) > div:nth-child(2) {
         position: absolute !important;
@@ -1067,12 +1163,12 @@ body.dark-mode .chat-input-area {
     #orderHistoryTableBody td:nth-of-type(8)::before { content: "Status"; }
     #orderHistoryTableBody td:nth-of-type(9)::before { content: "Action"; }
 
-    #depositHistoryTableBody td:nth-of-type(1)::before { content: "Date"; }
+    #depositHistoryTableBody td:nth-of-type(1)::before { content: "Account Name"; }
     #depositHistoryTableBody td:nth-of-type(2)::before { content: "Gateway"; }
     #depositHistoryTableBody td:nth-of-type(3)::before { content: "Amount"; }
-    #depositHistoryTableBody td:nth-of-type(4)::before { content: "Rate"; }
-    #depositHistoryTableBody td:nth-of-type(5)::before { content: "Status"; }
-    #depositHistoryTableBody td:nth-of-type(6)::before { content: "TxID/Note"; }
+    #depositHistoryTableBody td:nth-of-type(4)::before { content: "Proof"; }
+    #depositHistoryTableBody td:nth-of-type(5)::before { content: "Date"; }
+    #depositHistoryTableBody td:nth-of-type(6)::before { content: "Status"; }
 
     #usersTableBody td:nth-of-type(1)::before { content: "User"; }
     #usersTableBody td:nth-of-type(2)::before { content: "Email"; }
@@ -1084,13 +1180,13 @@ body.dark-mode .chat-input-area {
     #adminDepositsTableBody td:nth-of-type(1)::before { content: "User Info"; }
     #adminDepositsTableBody td:nth-of-type(2)::before { content: "Method"; }
     #adminDepositsTableBody td:nth-of-type(3)::before { content: "Amount"; }
-    #adminDepositsTableBody td:nth-of-type(4)::before { content: "TxID/Note"; }
+    #adminDepositsTableBody td:nth-of-type(4)::before { content: "Account Name / Note"; }
     #adminDepositsTableBody td:nth-of-type(5)::before { content: "Actions"; }
 
     #adminDepositsHistoryTableBody td:nth-of-type(1)::before { content: "User Info"; }
     #adminDepositsHistoryTableBody td:nth-of-type(2)::before { content: "Method"; }
     #adminDepositsHistoryTableBody td:nth-of-type(3)::before { content: "Amount"; }
-    #adminDepositsHistoryTableBody td:nth-of-type(4)::before { content: "TxID/Note"; }
+    #adminDepositsHistoryTableBody td:nth-of-type(4)::before { content: "Account Name / Note"; }
     #adminDepositsHistoryTableBody td:nth-of-type(5)::before { content: "Status"; }
 
     #adminServicesTableBody td:nth-of-type(1)::before { content: "Service ID"; }
@@ -1435,7 +1531,7 @@ body.dark-mode .chat-input-area {
         order: 5;
         font-size: 0.75rem !important;
     }
-    #depositHistoryTableBody td:nth-of-type(1)::before { content: "TxID: " !important; }
+    #depositHistoryTableBody td:nth-of-type(1)::before { content: "Account Name: " !important; }
     /* Date — bottom-right */
     #depositHistoryTableBody td:nth-of-type(5) {
         width: 50% !important;
@@ -1688,74 +1784,5 @@ body.dark-mode .chat-input-area {
         font-size: 0.75rem !important;
         margin-bottom: 10px !important;
         border-radius: 8px !important;
-    }
-
-    /* Premium Custom File Upload Field design */
-    #depositProofFile {
-        position: relative !important;
-        height: 48px !important;
-        background-color: var(--primary-light) !important;
-        border: 1px dashed var(--primary) !important;
-        color: var(--primary) !important;
-        cursor: pointer !important;
-        border-radius: 10px !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        font-size: 0 !important;
-    }
-    body.dark-mode #depositProofFile {
-        background-color: rgba(0, 82, 204, 0.15) !important;
-        border-color: var(--primary) !important;
-    }
-    #depositProofFile::file-selector-button {
-        display: none !important;
-    }
-    #depositProofFile::before {
-        content: "📷 Upload Payment Proof" !important;
-        position: absolute !important;
-        top: 30% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        font-size: 0.85rem !important;
-        font-weight: 700 !important;
-        color: var(--primary) !important;
-        pointer-events: none !important;
-    }
-    #depositProofFile::after {
-        content: "[ Choose Image ]" !important;
-        position: absolute !important;
-        bottom: 8% !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        font-size: 0.7rem !important;
-        font-weight: 500 !important;
-        color: var(--primary) !important;
-        opacity: 0.8;
-        pointer-events: none !important;
-    }
-
-    /* Format file formats note */
-    #depositProofFile + .form-text {
-        font-size: 0px !important;
-        margin-top: 4px !important;
-    }
-    #depositProofFile + .form-text::after {
-        content: "JPG • PNG • WEBP • Max 5MB" !important;
-        font-size: 0.7rem !important;
-        display: block !important;
-        text-align: center !important;
-        color: #94a3b8 !important;
-        font-weight: 500 !important;
-    }
-
-    /* Custom Green status message for screenshot upload */
-    #depositProofFileName {
-        font-size: 0px !important;
-    }
-    #depositProofFileName::after {
-        content: "✓ Screenshot Selected" !important;
-        font-size: 0.8rem !important;
-        color: var(--success) !important;
-        font-weight: 600 !important;
     }
 }

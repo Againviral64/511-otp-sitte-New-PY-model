@@ -12,55 +12,15 @@ export async function GET(request) {
         }
 
         let data, error;
-        try {
-            const { data: selectData, error: selectErr } = await supabase
-                .from('deposits')
-                .select(`
-                    id,
-                    user_id,
-                    method,
-                    amount,
-                    currency,
-                    tx_id,
-                    screenshot_url,
-                    proof_image,
-                    payment_note,
-                    status,
-                    created_at,
-                    profiles (
-                        email
-                    )
-                `)
-                .neq('status', 'PENDING')
-                .order('created_at', { ascending: false })
-                .limit(100);
-            
-            if (selectErr) throw selectErr;
-            data = selectData;
-            error = null;
-        } catch (dbErr) {
-            const { data: fallbackData, error: fallbackErr } = await supabase
-                .from('deposits')
-                .select(`
-                    id,
-                    user_id,
-                    method,
-                    amount,
-                    currency,
-                    tx_id,
-                    screenshot_url,
-                    status,
-                    created_at,
-                    profiles (
-                        email
-                    )
-                `)
-                .neq('status', 'PENDING')
-                .order('created_at', { ascending: false })
-                .limit(100);
-            data = fallbackData;
-            error = fallbackErr;
-        }
+        const { data: selectData, error: selectErr } = await supabase
+            .from('deposits')
+            .select('*, profiles(email)')
+            .neq('status', 'PENDING')
+            .order('created_at', { ascending: false })
+            .limit(100);
+        
+        data = selectData;
+        error = selectErr;
 
         if (error) return NextResponse.json({ success: false, message: error.message });
 
@@ -71,7 +31,7 @@ export async function GET(request) {
             method: d.method,
             amount: d.amount,
             currency: d.currency || 'USD',
-            tx_id: d.tx_id,
+            tx_id: d.account_name !== undefined ? d.account_name : d.tx_id,
             screenshot_url: d.screenshot_url,
             proof_image: d.proof_image || d.screenshot_url || null,
             payment_note: d.payment_note || null,

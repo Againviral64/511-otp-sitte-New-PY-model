@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Currency exchange configuration (Base currency is USD)
     const exchangeRates = {
-        PKR: { rate: 278.50, symbol: '₨ ' },
+        PKR: { rate: 278.50, symbol: 'Rs ' },
         USD: { rate: 1.0, symbol: '$' },
         INR: { rate: 83.40, symbol: '₹ ' },
         BDT: { rate: 117.20, symbol: '৳ ' },
@@ -1211,9 +1211,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const tr = document.createElement('tr');
             const bc = d.status === 'APPROVED' ? 'bg-success' : (d.status === 'PENDING' ? 'bg-warning text-dark' : 'bg-danger');
             
-            const depCurrency = d.currency || 'USD';
-            const details = exchangeRates[depCurrency] || { symbol: '$' };
-            const formattedAmount = `${details.symbol}${parseFloat(d.amount).toFixed(2)}`;
+            const depCurrency = d.currency || 'PKR';
+            let amt = parseFloat(d.amount);
+            if (depCurrency !== 'PKR') {
+                const rate = exchangeRates[depCurrency]?.rate || 1.0;
+                amt = amt * (278.50 / rate);
+            }
+            const formattedAmount = `Rs ${amt.toFixed(2)}`;
 
             const proofPath = d.proof_image || d.screenshot_url;
             let proofHtml = '<span class="text-muted small">No Proof</span>';
@@ -1228,8 +1232,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
 
+            const showTxId = d.tx_id && d.tx_id.startsWith('NP-') ? 'Not Provided' : d.tx_id;
             tr.innerHTML = `
-                <td><code>${d.tx_id}</code></td>
+                <td><code>${showTxId}</code></td>
                 <td>${d.method}</td>
                 <td class="text-nowrap"><strong>${formattedAmount}</strong></td>
                 <td>${proofHtml}</td>
@@ -1266,8 +1271,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const currency = currencySelector.value || 'PKR';
         const file = depositProofFile ? depositProofFile.files[0] : null;
 
-        if (!method || isNaN(amount) || amount <= 0 || !tx_id) {
-            showAlert('Please select method, enter valid amount, and type TxID.', 'warning');
+        if (!method || isNaN(amount) || amount <= 0 || !file) {
+            showAlert('Please select method, enter valid amount, and upload payment proof screenshot.', 'warning');
             return;
         }
 

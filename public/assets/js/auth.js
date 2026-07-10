@@ -74,6 +74,24 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/login';
         });
     }
+    const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+    if (mobileLogoutBtn) {
+        mobileLogoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('nova_session_token');
+            localStorage.removeItem('nova_user_email');
+            window.location.href = '/login';
+        });
+    }
+    const mobileHeaderLogoutBtn = document.getElementById('mobileHeaderLogoutBtn');
+    if (mobileHeaderLogoutBtn) {
+        mobileHeaderLogoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('nova_session_token');
+            localStorage.removeItem('nova_user_email');
+            window.location.href = '/login';
+        });
+    }
 
     // 3. Render email identifier
     const userEmailBadge = document.getElementById('userEmailBadge');
