@@ -149,6 +149,13 @@ SELECT
    FROM public.orders o
    JOIN public.services s ON o.product_id = s.service_id
    WHERE o.status = 'COMPLETED' AND o.created_at >= CURRENT_DATE) as cost_today,
+
+  -- Profit today (revenue - cost)
+  (SELECT COALESCE(SUM(price), 0) FROM public.orders WHERE status = 'COMPLETED' AND created_at >= CURRENT_DATE) -
+  (SELECT COALESCE(SUM(s.cost_price * 278.50), 0) 
+   FROM public.orders o
+   JOIN public.services s ON o.product_id = s.service_id
+   WHERE o.status = 'COMPLETED' AND o.created_at >= CURRENT_DATE) as profit_today,
   
   -- Lifetime orders
   (SELECT COUNT(*) FROM public.orders) as orders_lifetime,
@@ -160,7 +167,14 @@ SELECT
   (SELECT COALESCE(SUM(s.cost_price * 278.50), 0) 
    FROM public.orders o
    JOIN public.services s ON o.product_id = s.service_id
-   WHERE o.status = 'COMPLETED') as cost_lifetime;
+   WHERE o.status = 'COMPLETED') as cost_lifetime,
+
+  -- Lifetime profit (revenue - cost)
+  (SELECT COALESCE(SUM(price), 0) FROM public.orders WHERE status = 'COMPLETED') -
+  (SELECT COALESCE(SUM(s.cost_price * 278.50), 0) 
+   FROM public.orders o
+   JOIN public.services s ON o.product_id = s.service_id
+   WHERE o.status = 'COMPLETED') as profit_lifetime;
 
 -- 12. Create whatsapp_settings table
 CREATE TABLE IF NOT EXISTS public.whatsapp_settings (

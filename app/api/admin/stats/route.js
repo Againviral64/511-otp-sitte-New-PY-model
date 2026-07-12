@@ -28,6 +28,8 @@ export async function GET(request) {
         let dailyRevenue = [];
         let dailyOrders = [];
         let dailySignups = [];
+        let dailyCost = [];
+        let dailyProfit = [];
 
         const dates = [];
         for (let i = 29; i >= 0; i--) {
@@ -47,8 +49,11 @@ export async function GET(request) {
 
             const { data: dbOrders } = await supabase
                 .from('orders')
-                .select('created_at, price, status')
+                .select('created_at, price, status, product_id')
                 .gte('created_at', thirtyDaysAgo.toISOString());
+
+            // Fetch all services for cost lookup
+            const { data: allServices } = await supabase.from('services').select('service_id, cost_price');
 
             const { data: dbSignups } = await supabase
                 .from('profiles')
@@ -57,9 +62,17 @@ export async function GET(request) {
 
             const ordersGrouped = {};
             const revenueGrouped = {};
+            const costGrouped = {};
+            const serviceCostMap = {};
+            if (allServices) {
+                allServices.forEach(s => {
+                    serviceCostMap[s.service_id] = parseFloat(s.cost_price || 0);
+                });
+            }
             dates.forEach(d => {
                 ordersGrouped[d] = 0;
                 revenueGrouped[d] = 0;
+                costGrouped[d] = 0;
             });
 
             if (dbOrders) {
@@ -69,6 +82,8 @@ export async function GET(request) {
                         ordersGrouped[dateStr]++;
                         if (o.status === 'COMPLETED') {
                             revenueGrouped[dateStr] += parseFloat(o.price || 0);
+                            const unitCost = serviceCostMap[o.product_id] || 0;
+                            costGrouped[dateStr] += unitCost * 278.50;
                         }
                     }
                 });
@@ -92,6 +107,8 @@ export async function GET(request) {
             dailyRevenue = dates.map(d => parseFloat(revenueGrouped[d].toFixed(2)));
             dailyOrders = dates.map(d => ordersGrouped[d]);
             dailySignups = dates.map(d => signupsGrouped[d]);
+            dailyCost = dates.map(d => parseFloat(costGrouped[d].toFixed(2)));
+            dailyProfit = dates.map(d => parseFloat((revenueGrouped[d] - costGrouped[d]).toFixed(2)));
         }
 
         const { data: statsData, error: viewError } = await supabase
@@ -116,24 +133,31 @@ export async function GET(request) {
             total_liability: 0
         };
 
+        const revenueToday = parseFloat(stats.revenue_today || 0);
+        const costToday = parseFloat(stats.cost_today || 0);
+        const revenueLifetime = parseFloat(stats.revenue_lifetime || 0);
+        const costLifetime = parseFloat(stats.cost_lifetime || 0);
+
         return NextResponse.json({
             success: true,
             stats: {
                 total_liability: parseFloat(stats.total_liability || 0),
                 orders_today: parseInt(stats.orders_today || 0),
-                revenue_today: parseFloat(stats.revenue_today || 0),
-                cost_today: parseFloat(stats.cost_today || 0),
-                profit_today: parseFloat(stats.profit_today || 0),
+                revenue_today: revenueToday,
+                cost_today: costToday,
+                profit_today: parseFloat((revenueToday - costToday).toFixed(3)),
                 orders_lifetime: parseInt(stats.orders_lifetime || 0),
-                revenue_lifetime: parseFloat(stats.revenue_lifetime || 0),
-                cost_lifetime: parseFloat(stats.cost_lifetime || 0),
-                profit_lifetime: parseFloat(stats.profit_lifetime || 0)
+                revenue_lifetime: revenueLifetime,
+                cost_lifetime: costLifetime,
+                profit_lifetime: parseFloat((revenueLifetime - costLifetime).toFixed(3))
             },
             daily_stats: {
                 labels: dailyLabels,
                 revenue: dailyRevenue,
                 orders: dailyOrders,
-                signups: dailySignups
+                signups: dailySignups,
+                cost: dailyCost,
+                profit: dailyProfit
             }
         });
     } catch (err) {

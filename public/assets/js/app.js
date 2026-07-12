@@ -463,6 +463,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         submitDepositBtn.addEventListener('click', handleDepositSubmit);
 
+        // Clear error highlights when user starts fixing
+        depositAmount.addEventListener('input', () => { depositAmount.style.border = ''; });
+        if (depositProofFile) {
+            depositProofFile.addEventListener('change', () => { depositProofFile.style.border = ''; });
+        }
+
         // Developer API actions trigger
         rotateApiKeyBtn.addEventListener('click', handleRotateApiKey);
 
@@ -1264,15 +1270,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleDepositSubmit() {
-        const method = depositMethod.value;
+        const method = depositMethod.value || 'Direct Transfer';
         const amount = parseFloat(depositAmount.value);
         const tx_id = depositTxId.value.trim();
         const screenshot_url = depositScreenshot.value.trim();
         const currency = currencySelector.value || 'PKR';
         const file = depositProofFile ? depositProofFile.files[0] : null;
 
-        if (!method || isNaN(amount) || amount <= 0 || !file) {
-            showAlert('Please select method, enter valid amount, and upload payment proof screenshot.', 'warning');
+        // Clear any previous error highlights
+        depositAmount.style.border = '';
+        if (depositProofFile) depositProofFile.style.border = '';
+
+        // Validate Amount (REQUIRED)
+        if (!depositAmount.value || isNaN(amount) || amount <= 0) {
+            depositAmount.style.border = '2px solid #dc3545';
+            depositAmount.focus();
+            showAlert('Please enter the deposit amount.', 'warning');
+            return;
+        }
+
+        // Validate Screenshot (REQUIRED)
+        if (!file) {
+            if (depositProofFile) depositProofFile.style.border = '2px solid #dc3545';
+            showAlert('Please attach payment proof screenshot.', 'warning');
             return;
         }
 
@@ -1282,6 +1302,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const minDepositVal = 50.0 * (selectedRate / pkrRate);
 
         if (amount < minDepositVal) {
+            depositAmount.style.border = '2px solid #dc3545';
+            depositAmount.focus();
             showAlert(`Minimum deposit amount is ${symbol}${minDepositVal.toFixed(2)}.`, 'warning');
             return;
         }

@@ -1443,7 +1443,9 @@
 
                 if (revenueProfitChart) revenueProfitChart.destroy();
                 
-                const profits = daily.revenue.map(rev => parseFloat((rev * 0.25).toFixed(2)));
+                const profits = (daily.profit && daily.profit.length > 0) 
+                    ? daily.profit 
+                    : daily.revenue.map(rev => parseFloat((rev * 0.25).toFixed(2)));
 
                 revenueProfitChart = new Chart(ctx1, {
                     type: 'line',
@@ -1463,7 +1465,7 @@
                                 borderWidth: 2.5
                             },
                             {
-                                label: 'Est. Profit (PKR)',
+                                label: 'Profit (PKR)',
                                 data: profits,
                                 borderColor: '#10b981',
                                 backgroundColor: 'rgba(16, 185, 129, 0.08)',

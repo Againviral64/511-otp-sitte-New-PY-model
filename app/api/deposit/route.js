@@ -17,8 +17,12 @@ export async function POST(request) {
         const { method, amount, tx_id, screenshot_url, currency, proof_image, payment_note } = await request.json();
 
         if (!method || !amount) {
-            return NextResponse.json({ success: false, message: 'Missing payment details.' });
+            if (!amount) {
+                return NextResponse.json({ success: false, message: 'Please enter the deposit amount.' });
+            }
         }
+
+        const finalMethod = method || 'Direct Transfer';
 
         // Validate and sanitize inputs
         const amountCheck = validateAmount(amount, 1, 50000);
@@ -37,7 +41,7 @@ export async function POST(request) {
             }
         }
 
-        const cleanMethod = sanitizeText(method);
+        const cleanMethod = sanitizeText(finalMethod);
         const cleanNote = payment_note ? sanitizeText(payment_note).substring(0, 500) : null;
 
         if (isMock || !supabase) {

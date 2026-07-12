@@ -589,28 +589,62 @@ img {
     #themeToggleBtn {
         position: absolute !important;
         top: 10px !important;
-        right: 110px !important;
+        right: 56px !important;
         margin: 0 !important;
         width: 36px !important;
         height: 36px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 50% !important;
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1 !important;
+        z-index: 100 !important;
+    }
+    body.dark-mode #themeToggleBtn {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
     }
     .mobile-header-logout-btn {
         position: absolute !important;
         top: 10px !important;
         right: 12px !important;
         margin: 0 !important;
+        width: 36px !important;
+        height: 36px !important;
         display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 50% !important;
+        background-color: #fef2f2 !important;
+        color: #ef4444 !important;
+        border: 1px solid #fee2e2 !important;
+        z-index: 100 !important;
     }
-    .workspace-header .d-flex:nth-child(2) > div:nth-child(2) {
-        position: absolute !important;
-        top: 10px !important;
-        right: 12px !important;
+    .mobile-header-logout-btn span {
+        display: none !important;
+    }
+    .mobile-header-logout-btn i {
+        font-size: 1.1rem !important;
         margin: 0 !important;
     }
-    #currencySelector {
-        width: 100px !important;
-        font-size: 0.8rem !important;
-        padding: 5px 8px !important;
+    .workspace-header .d-flex.me-2,
+    .workspace-header .currency-badge-container {
+        display: none !important;
+    }
+    #countrySelect, #serviceSelect {
+        height: 42px !important;
+        padding: 6px 12px !important;
+        font-size: 0.85rem !important;
+        border-radius: 8px !important;
+    }
+    #buyNumberBtn {
+        height: 44px !important;
+        padding: 6px 12px !important;
+        font-size: 0.95rem !important;
+        border-radius: 8px !important;
     }
     .workspace-header > .d-flex:nth-child(2) {
         display: flex !important;
