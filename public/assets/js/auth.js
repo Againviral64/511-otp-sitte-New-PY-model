@@ -9,6 +9,77 @@ if (window.location.hash) {
     }
 }
 
+// Global fetch request interceptor to handle session expiration/invalid token redirects
+const originalFetch = window.fetch;
+window.fetch = async function (...args) {
+    try {
+        const response = await originalFetch(...args);
+        
+        if (response.status === 401) {
+            handleSessionExpired();
+        } else {
+            const clone = response.clone();
+            try {
+                const json = await clone.json();
+                if (json && json.success === false && (
+                    json.message === 'Invalid token session.' || 
+                    json.message === 'Invalid authorization token.' || 
+                    json.message === 'Login expired'
+                )) {
+                    handleSessionExpired();
+                }
+            } catch (e) {
+                // Ignore parsing/non-JSON errors
+            }
+        }
+        return response;
+    } catch (err) {
+        throw err;
+    }
+};
+
+let isRedirecting = false;
+function handleSessionExpired() {
+    if (isRedirecting) return;
+    isRedirecting = true;
+
+    localStorage.removeItem('nova_session_token');
+    localStorage.removeItem('nova_user_email');
+
+    // Create elegant red alert banner at the top of the body
+    const alertEl = document.createElement('div');
+    alertEl.style.position = 'fixed';
+    alertEl.style.top = '24px';
+    alertEl.style.left = '50%';
+    alertEl.style.transform = 'translateX(-50%)';
+    alertEl.style.zIndex = '999999';
+    alertEl.style.backgroundColor = '#ef4444';
+    alertEl.style.color = '#ffffff';
+    alertEl.style.padding = '14px 24px';
+    alertEl.style.borderRadius = '10px';
+    alertEl.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.15)';
+    alertEl.style.fontWeight = '600';
+    alertEl.style.fontSize = '0.95rem';
+    alertEl.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    alertEl.style.textAlign = 'center';
+    alertEl.style.display = 'flex';
+    alertEl.style.alignItems = 'center';
+    alertEl.style.gap = '8px';
+    alertEl.innerHTML = '<i class="fa-solid fa-circle-exclamation fs-5"></i><span>Login expired. Redirecting to login page...</span>';
+    
+    document.body.appendChild(alertEl);
+
+    setTimeout(() => {
+        const path = window.location.pathname;
+        if (path.includes('/admin')) {
+            window.location.href = '/admin-login';
+        } else {
+            window.location.href = '/login';
+        }
+    }, 2000);
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     const sessionToken = localStorage.getItem('nova_session_token');
     const userEmail = localStorage.getItem('nova_user_email');

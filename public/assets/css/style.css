@@ -830,7 +830,8 @@ img {
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-top: 1px solid rgba(0, 0, 0, 0.05);
-    z-index: 1000;
+    z-index: 99999 !important;
+    pointer-events: auto !important;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) 10px;
 }
@@ -1191,7 +1192,7 @@ body.dark-mode .chat-input-area {
     #orderHistoryTableBody td:nth-of-type(2)::before { content: "Service"; }
     #orderHistoryTableBody td:nth-of-type(3)::before { content: "Number"; }
     #orderHistoryTableBody td:nth-of-type(4)::before { content: "Price"; }
-    #orderHistoryTableBody td:nth-of-type(5)::before { content: "OTP Code"; }
+    #orderHistoryTableBody td:nth-of-type(5)::before { content: "Messages"; }
     #orderHistoryTableBody td:nth-of-type(6)::before { content: "Message"; }
     #orderHistoryTableBody td:nth-of-type(7)::before { content: "Created At"; }
     #orderHistoryTableBody td:nth-of-type(8)::before { content: "Status"; }
@@ -1383,10 +1384,33 @@ body.dark-mode .chat-input-area {
         font-size: 0.7rem !important;
         margin-right: 3px !important;
     }
-    /* Hide: Order ID, Message */
-    #orderHistoryTableBody td:nth-of-type(1),
+    /* Hide: Message */
     #orderHistoryTableBody td:nth-of-type(6) {
         display: none !important;
+    }
+    /* Tracking Link row on mobile cards */
+    #orderHistoryTableBody td:nth-of-type(1) {
+        width: 100% !important;
+        order: 8;
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        padding-top: 6px !important;
+        margin-top: 6px !important;
+        border-top: 1px dashed rgba(255, 255, 255, 0.1) !important;
+    }
+    body:not(.dark-mode) #orderHistoryTableBody td:nth-of-type(1) {
+        border-top-color: rgba(0, 0, 0, 0.08) !important;
+    }
+    #orderHistoryTableBody td:nth-of-type(1)::before {
+        content: "Tracking Link: " !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+    body.dark-mode #orderHistoryTableBody td:nth-of-type(1)::before {
+        color: #94a3b8 !important;
     }
     /* Service Name — top-left title */
     #orderHistoryTableBody td:nth-of-type(2) {
@@ -1819,4 +1843,78 @@ body.dark-mode .chat-input-area {
         margin-bottom: 10px !important;
         border-radius: 8px !important;
     }
+}
+
+/* Fix for 6 elements bottom nav on small mobile devices to prevent wrapping */
+@media (max-width: 480px) {
+    .mobile-nav-link {
+        padding: 4px 6px !important;
+        font-size: 0.65rem !important;
+    }
+    .mobile-nav-link i {
+        font-size: 1.1rem !important;
+    }
+}
+
+/* Bulk pane overrides on mobile to make the card and components more compact */
+@media (max-width: 767px) {
+    .pane-content#pane-bulk .main-card {
+        padding: 1.15rem !important;
+        margin-bottom: 1rem !important;
+        border-radius: 12px !important;
+    }
+    .pane-content#pane-bulk .card-title {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    #bulkOrderForm .mb-3,
+    #bulkOrderForm .mb-4 {
+        margin-bottom: 0.75rem !important;
+    }
+    #bulkOrderForm .form-label {
+        font-size: 0.8rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    #bulkOrderForm .form-select,
+    #bulkOrderQuantity {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.85rem !important;
+        height: auto !important;
+        border-radius: 8px !important;
+    }
+    #bulkPriceDisplay {
+        padding: 10px 14px !important;
+        font-size: 1rem !important;
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+        border-radius: 10px !important;
+    }
+    #buyBulkBtn {
+        padding: 12px !important;
+        font-size: 0.95rem !important;
+        border-radius: 10px !important;
+    }
+}
+
+/* Deposit blinking notice styling */
+@keyframes deposit-notice-blink {
+    0% { opacity: 1; }
+    100% { opacity: 0.45; }
+}
+
+.deposit-blinking-notice {
+    background: rgba(239, 68, 68, 0.07) !important;
+    border: 1.5px solid #ef4444 !important;
+    border-radius: 12px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 20px !important;
+    font-weight: 700 !important;
+    color: #ef4444 !important;
+    text-align: center !important;
+    font-size: 0.92rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    animation: deposit-notice-blink 0.9s ease-in-out infinite alternate !important;
 }

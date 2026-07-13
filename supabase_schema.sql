@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.deposits (
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   method VARCHAR(50) NOT NULL,                 -- 'Easypaisa', 'Jazzcash', 'Zindagi', 'Bank'
   amount DECIMAL(10, 2) NOT NULL,
-  tx_id VARCHAR(100) UNIQUE NOT NULL,
+  tx_id VARCHAR(100) NOT NULL,
   screenshot_url TEXT DEFAULT NULL,
   status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
@@ -130,6 +130,11 @@ ALTER TABLE public.settings DISABLE ROW LEVEL SECURITY;
 -- Seed default OTP timeout limit setting (4 minutes)
 INSERT INTO public.settings (key, value)
 VALUES ('otp_expiry_duration', '4')
+ON CONFLICT (key) DO NOTHING;
+
+-- Seed default deposit notice alert text
+INSERT INTO public.settings (key, value)
+VALUES ('deposit_notice', '⚠️ Note: Please double check account titles and payment instructions before sending deposit requests!')
 ON CONFLICT (key) DO NOTHING;
 
 -- 11. Create view for admin statistics dashboard overview
@@ -222,4 +227,10 @@ ON CONFLICT (key) DO NOTHING;
 
 -- 15. Migration: Add status column if existing database structure doesn't have it
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'SUSPENDED', 'BANNED'));
+
+-- 16. Migration: Add tracking_key column to orders table for custom tracking URLs
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tracking_key VARCHAR(100) UNIQUE DEFAULT NULL;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS sms_messages JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS is_bulk BOOLEAN DEFAULT false;
+
 

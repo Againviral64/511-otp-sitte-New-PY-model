@@ -27,7 +27,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="assets/css/style.css?v=1.8" rel="stylesheet">
+    <link href="assets/css/style.css?v=2.2" rel="stylesheet">
     
     <style>
         body {
@@ -399,6 +399,11 @@
                 </a>
             </li>
             <li class="sidebar-item">
+                <a class="sidebar-link" href="#" data-pane="bulk">
+                    <i class="fa-solid fa-layer-group me-3"></i>Bulk Order
+                </a>
+            </li>
+            <li class="sidebar-item">
                 <a class="sidebar-link" href="#" data-pane="services">
                     <i class="fa-solid fa-list me-3"></i>Services & Rates
                 </a>
@@ -574,10 +579,75 @@
                                 <button class="btn btn-copy w-100" id="copyOtpBtn" disabled>
                                     <i class="fa-solid fa-copy me-2"></i>Copy OTP Code
                                 </button>
-                                <button class="btn btn-danger w-100 mt-2" id="endActivationBtn" style="display: none;">
-                                    <i class="fa-solid fa-circle-stop me-2"></i>End Activation
+                                <button class="btn btn-secondary w-100 mt-2" id="copyTrackingLinkBtn" style="display: none;">
+                                    <i class="fa-solid fa-link me-2"></i>Copy Tracking Link
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= PANE: BULK ORDER ======================= -->
+            <div class="pane-content" id="pane-bulk">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="main-card p-4">
+                            <h2 class="card-title mb-4"><i class="fa-solid fa-layer-group text-primary me-2"></i>Bulk Order Purchase</h2>
+                            
+                            <div id="bulkOrderForm">
+                                <div class="mb-3">
+                                    <label for="bulkCountrySelect" class="form-label">1. Operator Category Group</label>
+                                    <select class="form-select" id="bulkCountrySelect">
+                                        <option value="" selected disabled>Select Category/Group</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="bulkServiceSelect" class="form-label">2. App Service</label>
+                                    <select class="form-select" id="bulkServiceSelect">
+                                        <option value="" selected disabled>Select Service (Choose Group First)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="bulkOrderQuantity" class="form-label">3. Number of Orders (Quantity)</label>
+                                    <input type="number" class="form-control" id="bulkOrderQuantity" min="1" max="100" value="10" placeholder="e.g. 10" style="border-radius: 8px;">
+                                </div>
+
+                                <div class="price-box mb-4 d-none" id="bulkPriceDisplay" style="background-color: var(--primary-light); color: var(--primary); padding: 15px; border-radius: 12px; font-weight: 700; font-size: 1.15rem; border: 1px solid rgba(59, 130, 246, 0.15); margin-top: 15px;">
+                                    Total Amount: Rs 0.00
+                                </div>
+
+                                <button class="btn btn-primary-custom w-100 py-3 fs-5 m-0" id="buyBulkBtn">
+                                    <i class="fa-solid fa-cart-shopping me-2"></i>Place Bulk Order
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="main-card p-4" id="bulkOutputCard" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
+                            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                                <h2 class="card-title m-0"><i class="fa-solid fa-square-poll-horizontal text-primary me-2"></i>Bulk Purchase Result</h2>
+                                <button class="btn btn-primary d-flex align-items-center gap-2" id="copyBulkOutputBtn" style="border-radius: 8px; font-weight: 600; background-color: #2563eb; border-color: #2563eb; padding: 6px 14px; font-size: 0.85rem; height: 36px; margin: 0;">
+                                    <i class="fa-solid fa-copy"></i> Copy All
+                                </button>
+                            </div>
+                            
+                            <!-- Progress Bar -->
+                            <div class="mb-4 d-none" id="bulkProgressWrapper">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-secondary small fw-semibold" id="bulkProgressText">Booking numbers... (0/0)</span>
+                                    <span class="text-primary small fw-bold" id="bulkProgressPercent">0%</span>
+                                </div>
+                                <div class="progress" style="height: 10px; border-radius: 5px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" id="bulkProgressBar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-label mt-2 fw-semibold text-secondary">Booked Numbers & Tracking Links (Standard Stack)</div>
+                            <textarea class="form-control font-monospace mb-3" id="bulkOutputDisplay" rows="12" readonly style="font-size: 0.85rem; background-color: #f8fafc; border-radius: 8px; resize: none;" placeholder="Format Example:&#10;+19315576130&#10;https://access.novatixdigi.online/2nyhveyg4G62&#10;&#10;+19315576131&#10;https://access.novatixdigi.online/2nyhveyg4G63"></textarea>
                         </div>
                     </div>
                 </div>
@@ -622,6 +692,16 @@
                 <div class="main-card p-4">
                     <h3 class="section-title"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>My Orders Log</h3>
                     
+                    <!-- Search input to filter order history -->
+                    <div class="mb-3">
+                        <div class="input-group" style="max-width: 450px;">
+                            <span class="input-group-text bg-white border-end-0" style="border-radius: 8px 0 0 8px; border-color: #dee2e6;">
+                                <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-0" id="historySearchInput" placeholder="Search by number, order ID, service..." style="border-radius: 0 8px 8px 0; border-color: #dee2e6; font-size: 0.88rem; box-shadow: none;">
+                        </div>
+                    </div>
+                    
                     <div class="table-responsive table-responsive-cards">
                         <table class="table table-hover align-middle">
                             <thead>
@@ -630,7 +710,7 @@
                                     <th>Service</th>
                                     <th>Phone Number</th>
                                     <th>Paid Rate</th>
-                                    <th>OTP Code</th>
+                                    <th>Messages</th>
                                     <th>Message</th>
                                     <th>Created At</th>
                                     <th>Status</th>
@@ -653,6 +733,12 @@
                     <div class="col-lg-6">
                         <div class="main-card p-4">
                             <h3 class="section-title"><i class="fa-solid fa-plus text-primary me-2"></i>Load Balance</h3>
+                            
+                            <!-- Global blinking deposit notice message box -->
+                            <div class="deposit-blinking-notice d-none" id="depositNoticeBox">
+                                <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+                                <span id="depositNoticeContent">Loading deposit guidelines...</span>
+                            </div>
                             
                             <div class="mb-3">
                                 <label for="depositMethod" class="form-label">Payment Channel</label>
@@ -991,6 +1077,10 @@
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Get SMS</span>
             </a>
+            <a href="#" class="mobile-nav-link" data-pane="bulk">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Bulk</span>
+            </a>
             <a href="#" class="mobile-nav-link" data-pane="services">
                 <i class="fa-solid fa-list"></i>
                 <span>Rates</span>
@@ -1013,7 +1103,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/auth.js?v=1.7"></script>
-    <script src="assets/js/app.js?v=1.8"></script>
+    <script src="assets/js/auth.js?v=1.9"></script>
+    <script src="assets/js/app.js?v=3.3"></script>
 </body>
 </html>

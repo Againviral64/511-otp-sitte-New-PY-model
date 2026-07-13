@@ -9,24 +9,26 @@ const recentPurchases = new Map();
 
 export async function POST(request) {
     try {
-        // Rate limit check
+        const user = await verifyAuth(request);
+        const body = await request.json();
+        const { country, service, is_bulk } = body;
+
+        // Rate limit check (relaxed if is_bulk is true)
         const clientKey = getClientKey(request);
-        const limit = checkRateLimit(`buy:${clientKey}`, RATE_LIMITS.BUY.maxRequests, RATE_LIMITS.BUY.windowMs);
+        const maxReqs = is_bulk ? 120 : RATE_LIMITS.BUY.maxRequests;
+        const limit = checkRateLimit(`buy:${clientKey}`, maxReqs, RATE_LIMITS.BUY.windowMs);
         if (!limit.allowed) {
             return NextResponse.json({ success: false, message: `Too many purchase requests. Please wait ${Math.ceil(limit.retryAfterMs / 1000)} seconds.` }, { status: 429 });
         }
-
-        const user = await verifyAuth(request);
-        const { country, service } = await request.json();
 
         if (!country || !service) {
             return NextResponse.json({ success: false, message: 'Please select both Category and Service.' });
         }
 
-        // Duplicate order prevention: 30-second cooldown per user+service
+        // Duplicate order prevention: 30-second cooldown per user+service (bypass for bulk)
         const purchaseKey = `${user.id}:${service}`;
         const lastPurchase = recentPurchases.get(purchaseKey);
-        if (lastPurchase && Date.now() - lastPurchase < 30000) {
+        if (!is_bulk && lastPurchase && Date.now() - lastPurchase < 30000) {
             const waitSec = Math.ceil((30000 - (Date.now() - lastPurchase)) / 1000);
             return NextResponse.json({ success: false, message: `Please wait ${waitSec} seconds before buying the same service again.` });
         }
@@ -102,7 +104,7 @@ export async function POST(request) {
                 status: 'PENDING',
                 price: sellPricePKR,
                 sms_url: null,
-                product_id: service,
+                is_bulk: is_bulk === true,
                 created_at: new Date().toISOString()
             };
             mockOrders.unshift(newMockOrder);
@@ -160,6 +162,15 @@ export async function POST(request) {
                 return NextResponse.json({ success: false, message: 'Payment deduction error.' });
             }
 
+            const trackingKey = (() => {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 12; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            })();
+
             const { error: orderError } = await supabase
                 .from('orders')
                 .insert([{
@@ -171,16 +182,36 @@ export async function POST(request) {
                     status: 'PENDING',
                     price: sellPricePKR,
                     sms_url: smsUrl,
-                    product_id: service
+                    product_id: service,
+                    tracking_key: trackingKey
                 }]);
 
             if (orderError) {
                 console.error('Failed to save user order details:', orderError.message);
+                try {
+                    const fs = require('fs');
+                    fs.appendFileSync('d:/Zain Project/511 APi OTP/db_error.log', `[${new Date().toISOString()}] Insert failed: ${orderError.message}\nPayload: ${JSON.stringify({
+                        order_id: orderId,
+                        user_id: user.id,
+                        country: groupName,
+                        service: appName,
+                        number: number,
+                        status: 'PENDING',
+                        price: sellPricePKR,
+                        sms_url: smsUrl,
+                        product_id: service,
+                        tracking_key: trackingKey
+                    }, null, 2)}\n\n`);
+                } catch (err) {
+                    console.error('Logging to file failed:', err.message);
+                }
             }
         }
 
         // Record successful purchase for cooldown tracking
         recentPurchases.set(purchaseKey, Date.now());
+
+        const generatedKey = !isMock && supabase ? (await supabase.from('orders').select('tracking_key').eq('order_id', orderId).maybeSingle()).data?.tracking_key : 'MOCKKEY12345';
 
         return NextResponse.json({
             success: true,
@@ -189,7 +220,8 @@ export async function POST(request) {
             service: appName,
             number: number,
             price: sellPricePKR.toFixed(3),
-            sms_url: smsUrl
+            sms_url: smsUrl,
+            tracking_key: generatedKey
         });
     } catch (err) {
         return NextResponse.json({ success: false, message: err.message }, { status: 401 });

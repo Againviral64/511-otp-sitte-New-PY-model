@@ -12,156 +12,110 @@ export async function GET(request) {
             return NextResponse.json({ success: false, message: 'Missing order_id parameters' });
         }
 
-        let status = 'PENDING';
-        let otp = null;
-        let targetSmsUrl = null;
-        let isManualLink = false;
-        let orderRow = null;
-
-        if (!isMock && supabase) {
-            const { data, error } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('order_id', order_id)
-                .eq('user_id', user.id)
-                .maybeSingle();
-
-            if (error) {
-                return NextResponse.json({ success: false, message: `Database read error: ${error.message}` });
-            }
-
-            if (!data) {
-                return NextResponse.json({ success: false, message: 'Order not found in DB.' });
-            }
-
-            if (data.status !== 'PENDING') {
-                return NextResponse.json({ 
-                    success: true, 
-                    status: data.status === 'CANCELLED' ? 'REFUNDED' : data.status, 
-                    otp: data.otp 
-                });
-            }
-
-            orderRow = data;
-            if (data.sms_url) {
-                targetSmsUrl = data.sms_url;
-                isManualLink = true;
-            }
-        } else {
+        if (isMock || !supabase) {
             const localIdx = mockOrders.findIndex(o => o.order_id === order_id && o.user_id === user.id);
             if (localIdx === -1) {
                 return NextResponse.json({ success: false, message: 'Mock order not found.' });
             }
-            if (mockOrders[localIdx].status !== 'PENDING') {
-                return NextResponse.json({ 
-                    success: true, 
-                    status: mockOrders[localIdx].status === 'CANCELLED' ? 'REFUNDED' : mockOrders[localIdx].status, 
-                    otp: mockOrders[localIdx].otp 
-                });
-            }
-            orderRow = mockOrders[localIdx];
-            if (mockOrders[localIdx].sms_url) {
-                targetSmsUrl = mockOrders[localIdx].sms_url;
-                isManualLink = true;
-            }
-        }
-
-        let foundOtp = null;
-        let fullMessage = null;
-
-        if (isManualLink || targetSmsUrl) {
-            const response = await makeRequest(targetSmsUrl);
-            if (response && !response.toLowerCase().includes('no message') && !response.toLowerCase().includes('no sms')) {
-                fullMessage = response;
-                const parts = response.split('|');
-                if (parts.length > 1 && parts[0].trim().match(/^\d{4,8}$/)) {
-                    foundOtp = parts[0].trim();
-                } else {
-                    const match = response.match(/\b\d{4,8}\b/);
-                    foundOtp = match ? match[0] : null;
-                }
-            }
-        } else {
-            if (isMock) {
+            const orderRow = mockOrders[localIdx];
+            if (orderRow.status === 'PENDING') {
                 const elapsed = (Date.now() - new Date(orderRow.created_at).getTime()) / 1000;
                 if (elapsed >= 10 && elapsed <= 300) {
-                    const simulatedOtp = `${Math.floor(100000 + Math.random() * 900000)}`;
-                    if (!orderRow.otp || orderRow.otp === '------' || orderRow.otp === 'Not Received' || orderRow.otp === 'Waiting...') {
-                        foundOtp = simulatedOtp;
-                        fullMessage = `[Mock Service] Your verification code is ${simulatedOtp}. Do not share this code with anyone.`;
-                    }
+                    orderRow.status = 'COMPLETED';
+                    orderRow.otp = `${Math.floor(100000 + Math.random() * 900000)}`;
+                    orderRow.full_message = `[Mock Service] Your verification code is ${orderRow.otp}.`;
+                    orderRow.received_at = new Date().toISOString();
                 }
-            } else {
-                const productId = orderRow.product_id;
-                const phoneNumber = orderRow.number.replace(/\s+/g, '');
-                const msgUrl = `${apiBase.replace(/\/$/, '')}/api/v1/msg?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(productId)}&number=${encodeURIComponent(phoneNumber)}`;
-                const response = await makeRequest(msgUrl);
+            }
+            const displayStatus = orderRow.status === 'CANCELLED' ? 'REFUNDED' : orderRow.status;
+            
+            const mock_sms_messages = [];
+            if (orderRow.status === 'COMPLETED' && orderRow.full_message) {
+                mock_sms_messages.push({
+                    text: orderRow.full_message,
+                    otp: orderRow.otp,
+                    time: orderRow.received_at || new Date().toISOString()
+                });
+            }
 
-                if (response) {
-                    try {
-                        const json = JSON.parse(response);
-                        if (json.code === 200 && json.data && json.data.msg) {
-                            fullMessage = json.data.msg;
-                            const match = json.data.msg.match(/\b\d{4,8}\b/);
-                            foundOtp = match ? match[0] : null;
-                        }
-                    } catch (e) {
-                        // Fallthrough
-                    }
-                }
+            return NextResponse.json({
+                success: true,
+                status: displayStatus,
+                otp: orderRow.status === 'COMPLETED' ? orderRow.otp : null,
+                full_message: orderRow.full_message || null,
+                sms_messages: mock_sms_messages,
+                tracking_key: orderRow.tracking_key || 'MOCKKEY12345'
+            });
+        }
+
+        // Fetch direct from Supabase
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('order_id', order_id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+        if (error) {
+            return NextResponse.json({ success: false, message: `Database read error: ${error.message}` });
+        }
+
+        if (!order) {
+            return NextResponse.json({ success: false, message: 'Order not found in DB.' });
+        }
+
+        let displayStatus = order.status === 'CANCELLED' ? 'REFUNDED' : order.status;
+        
+        // Build messages list — try message_1..10 columns first, fall back to sms_messages JSONB
+        const sms_messages = [];
+        for (let i = 1; i <= 10; i++) {
+            const msgVal = order[`message_${i}`];
+            if (msgVal) {
+                // Parse OTP from message
+                const otpMatch = msgVal.match(/\b\d{4,8}\b/);
+                const msgOtp = otpMatch ? otpMatch[0] : null;
+                sms_messages.push({
+                    text: msgVal,
+                    otp: msgOtp,
+                    time: order.created_at
+                });
+            }
+        }
+        if (sms_messages.length === 0 && Array.isArray(order.sms_messages)) {
+            sms_messages.push(...order.sms_messages);
+        }
+
+        // Determine displayOtp: from the latest message or fall back to order.otp
+        let displayOtp = (order.otp === '------' || order.otp === 'Not Received' || order.otp === 'Waiting...' || !order.otp) ? null : order.otp;
+        if (sms_messages.length > 0) {
+            const latestMsg = sms_messages[sms_messages.length - 1];
+            if (latestMsg.otp) {
+                displayOtp = latestMsg.otp;
+            }
+            if (displayStatus !== 'REFUNDED') {
+                displayStatus = 'COMPLETED';
+            }
+
+            // Self-heal DB status to COMPLETED
+            if (order.status === 'PENDING') {
+                supabase
+                    .from('orders')
+                    .update({ status: 'COMPLETED', otp: displayOtp || order.otp })
+                    .eq('order_id', order_id)
+                    .then(({ error }) => {
+                        if (error) console.error('Failed to self-heal order status to COMPLETED:', error);
+                    });
             }
         }
 
-        let finalOtpVal = orderRow.otp || '------';
-        if (fullMessage || foundOtp) {
-            finalOtpVal = fullMessage || foundOtp;
-        }
-
-        if (foundOtp) {
-            status = 'COMPLETED';
-            if (!isMock && supabase) {
-                const updatePayload = { status: 'COMPLETED', otp: finalOtpVal };
-                if (fullMessage) {
-                    updatePayload.full_message = fullMessage;
-                    updatePayload.received_at = new Date().toISOString();
-                }
-                try {
-                    const { error } = await supabase
-                        .from('orders')
-                        .update(updatePayload)
-                        .eq('order_id', order_id);
-                    
-                    if (error) {
-                        await supabase
-                            .from('orders')
-                            .update({ status: 'COMPLETED', otp: finalOtpVal })
-                            .eq('order_id', order_id);
-                    }
-                } catch (e) {
-                    await supabase
-                        .from('orders')
-                        .update({ status: 'COMPLETED', otp: finalOtpVal })
-                        .eq('order_id', order_id);
-                }
-            } else {
-                const localIdx = mockOrders.findIndex(o => o.order_id === order_id);
-                if (localIdx !== -1) {
-                    mockOrders[localIdx].status = 'COMPLETED';
-                    mockOrders[localIdx].otp = finalOtpVal;
-                    if (fullMessage) {
-                        mockOrders[localIdx].full_message = fullMessage;
-                        mockOrders[localIdx].received_at = new Date().toISOString();
-                    }
-                }
-            }
-        } else {
-            status = 'PENDING';
-        }
-
-        const displayStatus = status === 'CANCELLED' ? 'REFUNDED' : status;
-        const displayOtp = (finalOtpVal === '------' || finalOtpVal === 'Not Received' || finalOtpVal === 'Waiting...') ? null : finalOtpVal;
-
-        return NextResponse.json({ success: true, status: displayStatus, otp: displayOtp, full_message: fullMessage || orderRow.full_message || null });
+        return NextResponse.json({
+            success: true,
+            status: displayStatus,
+            otp: displayOtp,
+            full_message: sms_messages.length > 0 ? sms_messages[sms_messages.length - 1].text : (order.full_message || null),
+            sms_messages: sms_messages,
+            tracking_key: order.tracking_key
+        });
     } catch (err) {
         return NextResponse.json({ success: false, message: err.message }, { status: 401 });
     }

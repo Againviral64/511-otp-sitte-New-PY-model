@@ -1,3 +1,24 @@
 {
-  "framework": "nextjs"
+  "routes": [
+    {
+      "src": "/style.css",
+      "dest": "/tracking-frontend/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/tracking-frontend/app.js"
+    },
+    {
+      "src": "/",
+      "dest": "/tracking-frontend/index.html"
+    },
+    {
+      "src": "/track",
+      "dest": "/tracking-frontend/track.html"
+    },
+    {
+      "src": "/[a-zA-Z0-9]{12}",
+      "dest": "/tracking-frontend/track.html"
+    }
+  ]
 }

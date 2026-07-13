@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastHistoryData = [];
     let lastDepositData = [];
     let lastProfileData = null;
+    let hasSubscribedRealtime = false;
     let activeChatTicketId = null;
     let chatInterval = null;
 
@@ -64,29 +65,388 @@ document.addEventListener('DOMContentLoaded', () => {
     const orderStatusBadge = document.getElementById('orderStatusBadge');
     const otpCodeDisplay = document.getElementById('otpCodeDisplay');
     const copyOtpBtn = document.getElementById('copyOtpBtn');
+    const copyTrackingLinkBtn = document.getElementById('copyTrackingLinkBtn');
     const endActivationBtn = document.getElementById('endActivationBtn');
     const smsStatusContainer = document.getElementById('smsStatusContainer');
     const waitingStatusText = document.getElementById('waitingStatusText');
     const waitingSpinner = document.getElementById('waitingSpinner');
 
-    function setOtpDisplayValue(value) {
-        if (!value || value === '------' || value === 'Not Received') {
+    let currentTrackingKey = null;
+
+    let currentLatestOtp = null; // Global variable to store the latest OTP
+    let lastSmsCount = -1; // Track message count for chime notification
+
+    function playChimeNotification() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            
+            const playTone = (freq, startTime, duration) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, startTime);
+                gain.gain.setValueAtTime(0.2, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+            
+            const now = ctx.currentTime;
+            playTone(880, now, 0.35); // A5 chime note
+            playTone(1046.50, now + 0.1, 0.45); // C6 chime note
+        } catch (e) {
+            console.warn('Web Audio chime sound failed:', e);
+        }
+    }
+
+    function setOtpDisplayValue(messagesOrText, isHighlighted = false) {
+        // Clear any custom styles
+        otpCodeDisplay.style.fontSize = '';
+        otpCodeDisplay.style.letterSpacing = '';
+        otpCodeDisplay.style.borderColor = '';
+        otpCodeDisplay.style.color = '';
+        otpCodeDisplay.style.backgroundColor = '';
+        otpCodeDisplay.style.boxShadow = '';
+        otpCodeDisplay.style.display = 'flex';
+        otpCodeDisplay.style.flexDirection = 'column';
+        otpCodeDisplay.style.alignItems = 'stretch';
+        otpCodeDisplay.classList.remove('display-4', 'fs-6');
+        otpCodeDisplay.innerHTML = '';
+        
+        // Handle empty/loading state
+        if (!messagesOrText || messagesOrText === '------' || messagesOrText === 'Not Received' || (Array.isArray(messagesOrText) && messagesOrText.length === 0)) {
             otpCodeDisplay.textContent = '------';
-            otpCodeDisplay.style.fontSize = '';
             otpCodeDisplay.style.letterSpacing = '4px';
+            otpCodeDisplay.style.display = 'flex';
+            otpCodeDisplay.style.flexDirection = 'row';
+            otpCodeDisplay.style.alignItems = 'center';
+            otpCodeDisplay.style.justifyContent = 'center';
+            otpCodeDisplay.classList.add('display-4');
+            currentLatestOtp = null;
+            return;
+        }
+
+        // Normalize to array of message objects or strings
+        let messages = [];
+        if (Array.isArray(messagesOrText)) {
+            messages = messagesOrText;
         } else {
-            otpCodeDisplay.textContent = value;
-            if (value.length > 8) {
-                otpCodeDisplay.style.fontSize = '1.15rem';
-                otpCodeDisplay.style.letterSpacing = 'normal';
-                otpCodeDisplay.classList.remove('display-4');
-                otpCodeDisplay.classList.add('fs-5');
+            messages = [{ text: messagesOrText }];
+        }
+
+        // Store the latest OTP from the last message in the array
+        const latestMsg = messages[messages.length - 1];
+        const latestMsgText = typeof latestMsg === 'object' ? latestMsg.text : latestMsg;
+        const otpMatch = latestMsgText ? latestMsgText.match(/\b\d{4,8}\b/) : null;
+        currentLatestOtp = (typeof latestMsg === 'object' && latestMsg.otp) ? latestMsg.otp : (otpMatch ? otpMatch[0] : null);
+
+        // Render messages: recent on TOP, older below (loop in reverse)
+        for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i];
+            const msgText = typeof msg === 'object' ? msg.text : msg;
+            const absoluteIdx = i + 1;
+            
+            const msgCard = document.createElement('div');
+            msgCard.className = 'p-3 rounded border text-start mb-3 shadow-sm d-flex flex-column';
+            
+            // Highlight the latest message (which is index length - 1)
+            if (i === messages.length - 1 && isHighlighted) {
+                msgCard.style.borderColor = '#10b981';
+                msgCard.style.backgroundColor = '#f0fdf4';
+                msgCard.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.08)';
             } else {
-                otpCodeDisplay.style.fontSize = '';
-                otpCodeDisplay.style.letterSpacing = '4px';
-                otpCodeDisplay.classList.add('display-4');
-                otpCodeDisplay.classList.remove('fs-5');
+                msgCard.style.borderColor = '#e2e8f0';
+                msgCard.style.backgroundColor = '#ffffff';
             }
+
+            // Card Header
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'd-flex justify-content-between align-items-center mb-2 pb-2 border-bottom';
+            cardHeader.style.borderColor = '#f1f5f9';
+
+            // Index label
+            const label = document.createElement('span');
+            label.className = 'px-2 py-0.5 rounded fw-bold text-uppercase';
+            label.style.fontSize = '0.7rem';
+            label.style.letterSpacing = '0.5px';
+            if (i === messages.length - 1) {
+                label.style.backgroundColor = '#d1fae5';
+                label.style.color = '#065f46';
+                label.textContent = `Message ${absoluteIdx} (Latest)`;
+            } else {
+                label.style.backgroundColor = '#f1f5f9';
+                label.style.color = '#475569';
+                label.textContent = `Message ${absoluteIdx}`;
+            }
+            cardHeader.appendChild(label);
+
+            // Copy button on top right of card
+            const otpCodeMatch = msgText.match(/\b\d{4,8}\b/);
+            const msgOtp = (typeof msg === 'object' && msg.otp) ? msg.otp : (otpCodeMatch ? otpCodeMatch[0] : null);
+            const copyText = msgOtp || msgText;
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-sm btn-primary px-2.5 py-0.5 d-flex align-items-center gap-1';
+            copyBtn.style.borderRadius = '4px';
+            copyBtn.style.fontSize = '0.72rem';
+            copyBtn.style.fontWeight = '600';
+            copyBtn.style.backgroundColor = '#2563eb';
+            copyBtn.style.borderColor = '#2563eb';
+            copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy';
+            
+            copyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(copyText).then(() => {
+                    const origHtml = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    copyBtn.style.backgroundColor = '#10b981';
+                    copyBtn.style.borderColor = '#10b981';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = origHtml;
+                        copyBtn.style.backgroundColor = '#2563eb';
+                        copyBtn.style.borderColor = '#2563eb';
+                    }, 1500);
+                });
+            });
+            cardHeader.appendChild(copyBtn);
+
+            msgCard.appendChild(cardHeader);
+
+            // Card Content text
+            const contentText = document.createElement('div');
+            contentText.className = 'font-monospace text-wrap';
+            contentText.style.fontSize = '0.85rem';
+            contentText.style.lineHeight = '1.4';
+            contentText.style.whiteSpace = 'pre-wrap';
+            contentText.style.wordBreak = 'break-all';
+            contentText.style.color = '#1e293b';
+            contentText.textContent = msgText;
+
+            msgCard.appendChild(contentText);
+            otpCodeDisplay.appendChild(msgCard);
+        }
+    }
+
+    function parseMessagesFromString(text) {
+        if (!text) return [];
+        
+        // Regex to match "Message #1:", "Message #2:", "Message 1:", "Message 2:" etc.
+        const regex = /Message\s*#?\d+:/gi;
+        const matches = [...text.matchAll(regex)];
+        
+        if (matches.length === 0) {
+            return [{ text: text }];
+        }
+        
+        const messages = [];
+        for (let i = 0; i < matches.length; i++) {
+            const startIdx = matches[i].index + matches[i][0].length;
+            const endIdx = (i + 1 < matches.length) ? matches[i+1].index : text.length;
+            const msgContent = text.substring(startIdx, endIdx).trim();
+            if (msgContent) {
+                messages.push({ text: msgContent });
+            }
+        }
+        return messages;
+    }
+
+    function renderModalMessageCards(messages, number = '') {
+        const modalBody = document.getElementById('modalMessageBody');
+        if (!modalBody) return;
+        
+        modalBody.style.backgroundColor = 'transparent';
+        modalBody.style.border = 'none';
+        modalBody.style.padding = '0';
+        modalBody.innerHTML = ''; // Clear previous text
+
+        // 1. Render Number Header at the top
+        if (number) {
+            let formattedNumber = number;
+            if (!formattedNumber.startsWith('+')) {
+                formattedNumber = '+' + formattedNumber;
+            }
+            const numberHeader = document.createElement('div');
+            numberHeader.className = 'p-3 mb-3 border rounded text-center shadow-sm';
+            numberHeader.style.backgroundColor = '#f8fafc';
+            numberHeader.style.borderColor = '#3b82f6'; // Match primary theme
+            numberHeader.innerHTML = `
+                <span class="text-secondary small font-monospace d-block text-uppercase fw-bold mb-1" style="letter-spacing: 1px; font-size: 0.7rem;">Active Phone Number</span>
+                <strong class="fs-5 text-dark" style="letter-spacing: 0.5px;">${formattedNumber}</strong>
+            `;
+            modalBody.appendChild(numberHeader);
+        }
+
+        if (!messages || messages.length === 0) {
+            const noMsg = document.createElement('div');
+            noMsg.className = 'text-center py-4 text-muted border rounded bg-white';
+            noMsg.textContent = 'No messages found.';
+            modalBody.appendChild(noMsg);
+            return;
+        }
+
+        // 2. Create Scroll Container for messages
+        const scrollContainer = document.createElement('div');
+        scrollContainer.style.maxHeight = '420px';
+        scrollContainer.style.overflowY = 'auto';
+        scrollContainer.style.scrollbarWidth = 'thin';
+        scrollContainer.style.paddingRight = '5px';
+
+        // Limit to 10 messages max (keep the last 10)
+        let messagesToRender = messages;
+        if (messages.length > 10) {
+            messagesToRender = messages.slice(-10);
+        }
+
+        // Render messages: newest (last in array) at TOP, oldest (first in array) at BOTTOM
+        for (let idx = messagesToRender.length - 1; idx >= 0; idx--) {
+            const m = messagesToRender[idx];
+            // Calculate absolute message index relative to total list
+            const absoluteIdx = messages.length - (messagesToRender.length - 1 - idx);
+            const msgText = typeof m === 'object' ? m.text : m;
+
+            const messageCard = document.createElement('div');
+            messageCard.className = 'p-3 mb-3 border rounded shadow-sm bg-white text-dark d-flex flex-column';
+            
+            // Highlight newest message on top with blue/indigo border and subtle background tint
+            if (idx === messagesToRender.length - 1) {
+                messageCard.style.borderColor = '#3b82f6';
+                messageCard.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.08)';
+                messageCard.style.backgroundColor = '#f8fafc';
+            } else {
+                messageCard.style.borderColor = '#e2e8f0';
+            }
+
+            // 1. Card Header (Flex row to keep layout clean and prevent overlap)
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'd-flex justify-content-between align-items-center mb-2 pb-2 border-bottom';
+            cardHeader.style.borderColor = '#f1f5f9';
+
+            // Message index label
+            const label = document.createElement('span');
+            label.className = 'px-2 py-0.5 rounded fw-bold text-uppercase';
+            label.style.fontSize = '0.7rem';
+            label.style.letterSpacing = '0.5px';
+            
+            if (idx === messagesToRender.length - 1) {
+                label.style.backgroundColor = '#dbeafe';
+                label.style.color = '#1e40af';
+                label.textContent = `Message ${absoluteIdx} (Latest)`;
+            } else {
+                label.style.backgroundColor = '#f1f5f9';
+                label.style.color = '#475569';
+                label.textContent = `Message ${absoluteIdx}`;
+            }
+            cardHeader.appendChild(label);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-sm btn-primary px-2.5 py-0.5 d-flex align-items-center gap-1';
+            copyBtn.style.borderRadius = '4px';
+            copyBtn.style.fontSize = '0.72rem';
+            copyBtn.style.fontWeight = '600';
+            copyBtn.style.backgroundColor = '#2563eb';
+            copyBtn.style.borderColor = '#2563eb';
+            
+            // Extract OTP or copy full message
+            const otpMatch = msgText ? msgText.match(/\b\d{4,8}\b/) : null;
+            const otpText = otpMatch ? otpMatch[0] : msgText;
+
+            copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy';
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(otpText).then(() => {
+                    const orig = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    copyBtn.style.backgroundColor = '#10b981';
+                    copyBtn.style.borderColor = '#10b981';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = orig;
+                        copyBtn.style.backgroundColor = '#2563eb';
+                        copyBtn.style.borderColor = '#2563eb';
+                    }, 1500);
+                });
+            });
+
+            cardHeader.appendChild(copyBtn);
+            messageCard.appendChild(cardHeader);
+
+            // 2. Card Body (Message text)
+            const contentText = document.createElement('div');
+            contentText.className = 'font-monospace text-wrap my-1 text-start';
+            contentText.style.fontSize = '0.875rem';
+            contentText.style.lineHeight = '1.5';
+            contentText.style.whiteSpace = 'pre-wrap';
+            contentText.style.wordBreak = 'break-all';
+            contentText.style.color = '#1e293b';
+            contentText.textContent = msgText;
+            messageCard.appendChild(contentText);
+
+            scrollContainer.appendChild(messageCard);
+        }
+        
+        modalBody.appendChild(scrollContainer);
+    }
+
+    function showHistoryMessagesModal(orderId, fallbackMsg, number = '') {
+        if (!orderId) {
+            renderModalMessageCards(parseMessagesFromString(fallbackMsg), number);
+            showViewMessageModal();
+            return;
+        }
+
+        // Show loading spinner in modal body first
+        const modalBody = document.getElementById('modalMessageBody');
+        if (modalBody) {
+            modalBody.style.backgroundColor = 'transparent';
+            modalBody.style.border = 'none';
+            modalBody.style.padding = '0';
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Hide modal footer copy button
+        const copyFooterBtn = document.getElementById('copyModalMessageBtn');
+        if (copyFooterBtn) copyFooterBtn.style.display = 'none';
+
+        // Hide the modal footer entirely (removes Close button at bottom)
+        const modalFooter = document.querySelector('#viewMessageModal .modal-footer');
+        if (modalFooter) {
+            modalFooter.style.display = 'none';
+        }
+
+        // Show the modal
+        showViewMessageModal();
+
+        // Fetch from API
+        authFetch(`/api/sms?order_id=${encodeURIComponent(orderId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.sms_messages && data.sms_messages.length > 0) {
+                    renderModalMessageCards(data.sms_messages, number);
+                } else {
+                    renderModalMessageCards(parseMessagesFromString(fallbackMsg), number);
+                }
+            })
+            .catch(err => {
+                renderModalMessageCards(parseMessagesFromString(fallbackMsg), number);
+            });
+    }
+
+    function showViewMessageModal() {
+        const modalEl = document.getElementById('viewMessageModal');
+        if (modalEl) {
+            let modalObj = bootstrap.Modal.getInstance(modalEl);
+            if (!modalObj) {
+                modalObj = new bootstrap.Modal(modalEl);
+            }
+            modalObj.show();
         }
     }
 
@@ -156,6 +516,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupEventListeners() {
+        // Real-time search filter for History Log
+        const historySearchInput = document.getElementById('historySearchInput');
+        if (historySearchInput) {
+            historySearchInput.addEventListener('input', () => {
+                const query = historySearchInput.value.toLowerCase().trim();
+                if (!query) {
+                    renderHistoryTable(lastHistoryData);
+                    return;
+                }
+                const filtered = lastHistoryData.filter(o => {
+                    const orderId = String(o.order_id || '').toLowerCase();
+                    const service = String(o.service || '').toLowerCase();
+                    const number = String(o.number || '').toLowerCase();
+                    const statusText = String(o.status || '').toLowerCase();
+                    const trackingKey = String(o.tracking_key || '').toLowerCase();
+                    const otp = String(o.otp || '').toLowerCase();
+                    
+                    return orderId.includes(query) || 
+                           service.includes(query) || 
+                           number.includes(query) || 
+                           statusText.includes(query) || 
+                           trackingKey.includes(query) ||
+                           otp.includes(query);
+                });
+                renderHistoryTable(filtered);
+            });
+        }
+
         // Toggle sidebar drawer on mobile/tablet
         const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
         const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
@@ -250,10 +638,47 @@ document.addEventListener('DOMContentLoaded', () => {
         countrySelect.addEventListener('change', handleCountryChange);
         serviceSelect.addEventListener('change', updatePriceDisplay);
 
+        const bulkCountrySelect = document.getElementById('bulkCountrySelect');
+        const bulkServiceSelect = document.getElementById('bulkServiceSelect');
+        const bulkOrderQuantity = document.getElementById('bulkOrderQuantity');
+        const buyBulkBtn = document.getElementById('buyBulkBtn');
+        const copyBulkOutputBtn = document.getElementById('copyBulkOutputBtn');
+
+        if (bulkCountrySelect) {
+            bulkCountrySelect.addEventListener('change', handleBulkCountryChange);
+        }
+        if (bulkServiceSelect) {
+            bulkServiceSelect.addEventListener('change', updateBulkPriceDisplay);
+        }
+        if (bulkOrderQuantity) {
+            bulkOrderQuantity.addEventListener('input', updateBulkPriceDisplay);
+        }
+        if (buyBulkBtn) {
+            buyBulkBtn.addEventListener('click', handleBuyBulkOrders);
+        }
+        if (copyBulkOutputBtn) {
+            copyBulkOutputBtn.addEventListener('click', handleCopyBulkOutput);
+        }
+
         // Core purchase actions triggers
         buyNumberBtn.addEventListener('click', handleBuyNumber);
         copyOtpBtn.addEventListener('click', handleCopyOtp);
-        endActivationBtn.addEventListener('click', handleEndActivation);
+        if (copyTrackingLinkBtn) {
+            copyTrackingLinkBtn.addEventListener('click', () => {
+                if (!currentTrackingKey) return;
+                const link = `https://access.novatixdigi.online/${currentTrackingKey}`;
+                navigator.clipboard.writeText(link)
+                    .then(() => {
+                        showAlert('Tracking URL copied to clipboard!', 'success');
+                    })
+                    .catch(() => {
+                        showAlert('Failed to copy tracking link.', 'danger');
+                    });
+            });
+        }
+        if (endActivationBtn) {
+            endActivationBtn.addEventListener('click', handleEndActivation);
+        }
         numberDisplay.addEventListener('click', handleCopyNumber);
 
         // Services search filter
@@ -297,6 +722,34 @@ document.addEventListener('DOMContentLoaded', () => {
         orderHistoryTableBody.addEventListener('click', (e) => {
             const fetchBtn = e.target.closest('.btn-fetch-otp');
             const viewMsgBtn = e.target.closest('.btn-view-msg');
+            const historyFetchBtn = e.target.closest('.btn-history-fetch');
+            const copyLinkBtn = e.target.closest('.btn-copy-link');
+
+            if (copyLinkBtn) {
+                const link = copyLinkBtn.getAttribute('data-link');
+                navigator.clipboard.writeText(link).then(() => {
+                    const orig = copyLinkBtn.innerHTML;
+                    copyLinkBtn.innerHTML = '<i class="fa-solid fa-check text-success"></i>';
+                    setTimeout(() => {
+                        copyLinkBtn.innerHTML = orig;
+                    }, 1500);
+                });
+            }
+
+            if (historyFetchBtn) {
+                const orderId = historyFetchBtn.getAttribute('data-order-id');
+                const number = historyFetchBtn.getAttribute('data-number') || '';
+                historyFetchBtn.disabled = true;
+                const origHtml = historyFetchBtn.innerHTML;
+                historyFetchBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>...';
+                
+                showHistoryMessagesModal(orderId, "", number);
+                
+                setTimeout(() => {
+                    historyFetchBtn.disabled = false;
+                    historyFetchBtn.innerHTML = origHtml;
+                }, 1000);
+            }
 
             if (fetchBtn) {
                 const orderId = fetchBtn.getAttribute('data-order-id');
@@ -314,6 +767,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.success) {
                         const o = data.order;
                         currentOrderId = o.order_id;
+                        currentTrackingKey = o.tracking_key;
+                        
+                        if (copyTrackingLinkBtn && currentTrackingKey) {
+                            copyTrackingLinkBtn.style.display = 'block';
+                        }
                         
                         let formattedNumber = o.number;
                         if (formattedNumber && !formattedNumber.startsWith('+')) {
@@ -328,7 +786,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         setOtpDisplayValue('------');
                         copyOtpBtn.disabled = true;
-                        endActivationBtn.style.display = 'block';
+                        if (endActivationBtn) {
+                            endActivationBtn.style.display = 'block';
+                        }
                         smsStatusContainer.className = 'sms-status-container glow-pending';
 
                         waitingSpinner.classList.remove('d-none');
@@ -373,39 +833,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (viewMsgBtn) {
                 const rawMsg = viewMsgBtn.getAttribute('data-msg');
                 const decodedMsg = decodeURIComponent(rawMsg);
+                const orderId = viewMsgBtn.getAttribute('data-order-id');
+                const number = viewMsgBtn.getAttribute('data-number') || '';
                 
-                const modalBody = document.getElementById('modalMessageBody');
-                if (modalBody) {
-                    modalBody.textContent = decodedMsg;
-                }
-
-                const modalEl = document.getElementById('viewMessageModal');
-                if (modalEl) {
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-
-                    // Handle copying modal message to clipboard
-                    const copyBtn = document.getElementById('copyModalMessageBtn');
-                    if (copyBtn) {
-                        // Clear existing listeners
-                        const newCopyBtn = copyBtn.cloneNode(true);
-                        copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
-
-                        newCopyBtn.addEventListener('click', () => {
-                            navigator.clipboard.writeText(decodedMsg)
-                                .then(() => {
-                                    const origText = newCopyBtn.innerHTML;
-                                    newCopyBtn.innerHTML = '<i class="fa-solid fa-check me-2"></i>Copied!';
-                                    setTimeout(() => {
-                                        newCopyBtn.innerHTML = origText;
-                                    }, 2000);
-                                })
-                                .catch(() => {
-                                    alert('Failed to copy text.');
-                                });
-                        });
-                    }
-                }
+                showHistoryMessagesModal(orderId, decodedMsg, number);
             }
         });
 
@@ -600,7 +1031,6 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Profile retrieve and load
      */
-    let hasSubscribedRealtime = false;
 
     function setupGlobalRealtime() {
         if (hasSubscribedRealtime || !lastProfileData || !lastProfileData.id) return;
@@ -743,11 +1173,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Populate Group Selectors
                     countrySelect.innerHTML = '<option value="" selected disabled>Select Category/Group</option>';
+                    const bulkCountrySelect = document.getElementById('bulkCountrySelect');
+                    if (bulkCountrySelect) {
+                        bulkCountrySelect.innerHTML = '<option value="" selected disabled>Select Category/Group</option>';
+                    }
                     data.countries.forEach(country => {
                         const opt = document.createElement('option');
                         opt.value = country.code;
                         opt.textContent = `${country.flag} ${country.name}`;
                         countrySelect.appendChild(opt);
+                        
+                        if (bulkCountrySelect) {
+                            const bulkOpt = opt.cloneNode(true);
+                            bulkCountrySelect.appendChild(bulkOpt);
+                        }
                     });
 
                     availableServices = data.services;
@@ -829,6 +1268,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         buyNumberBtn.disabled = true;
         buyNumberBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ordering...';
+        if (copyTrackingLinkBtn) copyTrackingLinkBtn.style.display = 'none';
+        currentTrackingKey = null;
 
         authFetch('/api/buy', {
             method: 'POST',
@@ -839,6 +1280,11 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.success) {
                 currentOrderId = data.order_id;
+                currentTrackingKey = data.tracking_key;
+                
+                if (copyTrackingLinkBtn && currentTrackingKey) {
+                    copyTrackingLinkBtn.style.display = 'block';
+                }
                 
                 let formattedNumber = data.number;
                 if (formattedNumber && !formattedNumber.startsWith('+')) {
@@ -853,7 +1299,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 setOtpDisplayValue('------');
                 copyOtpBtn.disabled = true;
-                endActivationBtn.style.display = 'block';
+                if (endActivationBtn) {
+                    endActivationBtn.style.display = 'block';
+                }
                 smsStatusContainer.className = 'sms-status-container glow-pending';
 
                 waitingSpinner.classList.remove('d-none');
@@ -864,9 +1312,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 startPolling(data.order_id);
             } else {
                 showAlert(data.message, 'danger');
+                buyNumberBtn.disabled = false;
+                buyNumberBtn.innerHTML = '<i class="fa-solid fa-cart-shopping me-2"></i>Buy Number';
             }
-            buyNumberBtn.disabled = false;
-            buyNumberBtn.innerHTML = '<i class="fa-solid fa-cart-shopping me-2"></i>Buy Number';
         })
         .catch(err => {
             showAlert(err.message, 'danger');
@@ -875,10 +1323,268 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function handleBulkCountryChange() {
+        const bulkCountrySelect = document.getElementById('bulkCountrySelect');
+        const bulkServiceSelect = document.getElementById('bulkServiceSelect');
+        const bulkPriceDisplay = document.getElementById('bulkPriceDisplay');
+        if (!bulkCountrySelect || !bulkServiceSelect) return;
 
+        const selectedGroup = bulkCountrySelect.value;
+        bulkServiceSelect.innerHTML = '<option value="" selected disabled>Select Service</option>';
+        if (bulkPriceDisplay) bulkPriceDisplay.classList.add('d-none');
+
+        const filtered = availableServices.filter(s => s.group_id === selectedGroup);
+        filtered.forEach(service => {
+            const opt = document.createElement('option');
+            opt.value = service.code;
+            opt.textContent = `${service.name} (Stock: ${service.stock}) - ${formatPrice(service.price)}`;
+            bulkServiceSelect.appendChild(opt);
+        });
+    }
+
+    function updateBulkPriceDisplay() {
+        const bulkServiceSelect = document.getElementById('bulkServiceSelect');
+        const bulkOrderQuantity = document.getElementById('bulkOrderQuantity');
+        const bulkPriceDisplay = document.getElementById('bulkPriceDisplay');
+        if (!bulkServiceSelect || !bulkOrderQuantity || !bulkPriceDisplay) return;
+
+        const code = bulkServiceSelect.value;
+        const qty = parseInt(bulkOrderQuantity.value) || 0;
+        const selected = availableServices.find(s => s.code === code);
+        if (selected && qty > 0) {
+            const total = selected.price * qty * 278.50;
+            bulkPriceDisplay.textContent = `Total Amount: Rs ${total.toFixed(2)}`;
+            bulkPriceDisplay.classList.remove('d-none');
+        } else {
+            bulkPriceDisplay.classList.add('d-none');
+        }
+    }
+
+    function handleCopyBulkOutput() {
+        const bulkOutputDisplay = document.getElementById('bulkOutputDisplay');
+        const copyBulkOutputBtn = document.getElementById('copyBulkOutputBtn');
+        if (!bulkOutputDisplay || !copyBulkOutputBtn) return;
+
+        const text = bulkOutputDisplay.value;
+        if (!text) return;
+
+        navigator.clipboard.writeText(text).then(() => {
+            const orig = copyBulkOutputBtn.innerHTML;
+            copyBulkOutputBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+            copyBulkOutputBtn.className = 'btn btn-success w-100 py-2.5 d-flex align-items-center justify-content-center gap-2';
+            setTimeout(() => {
+                copyBulkOutputBtn.innerHTML = orig;
+                copyBulkOutputBtn.className = 'btn btn-primary w-100 py-2.5 d-flex align-items-center justify-content-center gap-2';
+            }, 1500);
+        });
+    }
+
+    async function handleBuyBulkOrders() {
+        const bulkCountrySelect = document.getElementById('bulkCountrySelect');
+        const bulkServiceSelect = document.getElementById('bulkServiceSelect');
+        const bulkOrderQuantity = document.getElementById('bulkOrderQuantity');
+        const buyBulkBtn = document.getElementById('buyBulkBtn');
+        const bulkOutputCard = document.getElementById('bulkOutputCard');
+        const bulkProgressWrapper = document.getElementById('bulkProgressWrapper');
+        const bulkProgressText = document.getElementById('bulkProgressText');
+        const bulkProgressPercent = document.getElementById('bulkProgressPercent');
+        const bulkProgressBar = document.getElementById('bulkProgressBar');
+        const bulkOutputDisplay = document.getElementById('bulkOutputDisplay');
+        const copyBulkOutputBtn = document.getElementById('copyBulkOutputBtn');
+
+        if (!bulkCountrySelect || !bulkServiceSelect || !bulkOrderQuantity || !buyBulkBtn) return;
+
+        const country = bulkCountrySelect.value;
+        const service = bulkServiceSelect.value;
+        const qty = parseInt(bulkOrderQuantity.value);
+
+        if (!country || !service || isNaN(qty) || qty < 1 || qty > 100) {
+            showAlert('Please select group, service, and set quantity between 1 and 100.', 'warning');
+            return;
+        }
+
+        const selected = availableServices.find(s => s.code === service);
+        if (!selected) {
+            showAlert('Service app is unavailable.', 'danger');
+            return;
+        }
+
+        const pricePKR = selected.price * 278.50;
+        const totalCostPKR = pricePKR * qty;
+        const userBalance = parseFloat(lastProfileData ? lastProfileData.balance : 0);
+
+        if (userBalance < totalCostPKR) {
+            showAlert('Insufficient balance. Please deposit funds.', 'danger');
+            return;
+        }
+
+        if (bulkOutputCard) bulkOutputCard.classList.remove('d-none');
+        if (bulkProgressWrapper) bulkProgressWrapper.classList.remove('d-none');
+        if (bulkOutputDisplay) bulkOutputDisplay.value = '';
+        if (copyBulkOutputBtn) copyBulkOutputBtn.disabled = true;
+
+        buyBulkBtn.disabled = true;
+        buyBulkBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+        let successfulCount = 0;
+        const purchasedOrders = []; // {order_id, number, tracking_key}
+
+        // Phase 1: Purchase one by one via /api/buy (each call saves to Supabase)
+        for (let i = 0; i < qty; i++) {
+            if (bulkProgressText) bulkProgressText.textContent = `Booking number ${i + 1} of ${qty}...`;
+            const pct = Math.round(((i) / qty) * 100);
+            if (bulkProgressPercent) bulkProgressPercent.textContent = `${pct}%`;
+            if (bulkProgressBar) {
+                bulkProgressBar.style.width = `${pct}%`;
+                bulkProgressBar.setAttribute('aria-valuenow', pct);
+            }
+
+            try {
+                const res = await authFetch('/api/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ country, service, is_bulk: true })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    successfulCount++;
+                    let numStr = data.number;
+                    if (numStr && !numStr.startsWith('+')) {
+                        numStr = '+' + numStr;
+                    }
+                    purchasedOrders.push({
+                        order_id: data.order_id,
+                        number: numStr,
+                        tracking_key: data.tracking_key || null
+                    });
+
+                    // Show number immediately (tracking link resolves later)
+                    updateBulkOutput(purchasedOrders, bulkOutputDisplay);
+                } else {
+                    if (data.error_type === 'LOW_BALANCE') {
+                        showAlert('Insufficient balance to continue bulk orders.', 'danger');
+                        break;
+                    }
+                    // Show error inline but continue
+                    purchasedOrders.push({
+                        order_id: null,
+                        number: `[Order ${i + 1} Failed: ${data.message || 'Gateway Error'}]`,
+                        tracking_key: null,
+                        failed: true
+                    });
+                    updateBulkOutput(purchasedOrders, bulkOutputDisplay);
+                }
+            } catch (err) {
+                purchasedOrders.push({
+                    order_id: null,
+                    number: `[Order ${i + 1} Failed: Connection Error]`,
+                    tracking_key: null,
+                    failed: true
+                });
+                updateBulkOutput(purchasedOrders, bulkOutputDisplay);
+            }
+
+            // Small delay between purchases
+            if (i < qty - 1) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+        }
+
+        // Phase 1 complete
+        const failedCount = qty - successfulCount;
+        if (bulkProgressText) bulkProgressText.textContent = `Purchased: ${successfulCount} booked, ${failedCount} failed. Resolving tracking links...`;
+        if (bulkProgressPercent) bulkProgressPercent.textContent = '100%';
+        if (bulkProgressBar) {
+            bulkProgressBar.style.width = '100%';
+            bulkProgressBar.setAttribute('aria-valuenow', 100);
+        }
+
+        // Phase 2: Poll for tracking keys from Python poller
+        const ordersNeedingTracking = purchasedOrders.filter(o => o.order_id && !o.tracking_key && !o.failed);
+        if (ordersNeedingTracking.length > 0) {
+            await pollBulkTrackingKeys(ordersNeedingTracking, purchasedOrders, bulkOutputDisplay, bulkProgressText);
+        }
+
+        // Final state
+        if (bulkProgressText) bulkProgressText.textContent = `Completed: ${successfulCount} booked, ${failedCount} failed.`;
+        if (bulkProgressBar) bulkProgressBar.classList.remove('progress-bar-animated');
+
+        buyBulkBtn.disabled = false;
+        buyBulkBtn.innerHTML = '<i class="fa-solid fa-cart-shopping me-2"></i>Place Bulk Order';
+
+        if (successfulCount > 0 && copyBulkOutputBtn) {
+            copyBulkOutputBtn.disabled = false;
+        }
+
+        loadProfile();
+        loadHistory();
+    }
+
+    /**
+     * Update the bulk output textarea with current order data.
+     */
+    function updateBulkOutput(orders, outputDisplay) {
+        if (!outputDisplay) return;
+        const lines = [];
+        orders.forEach(o => {
+            if (o.failed) {
+                lines.push(o.number); // error message string
+            } else {
+                const tk = o.tracking_key;
+                if (tk) {
+                    lines.push(`${o.number}\nhttps://access.novatixdigi.online/${tk}`);
+                } else {
+                    lines.push(`${o.number}\nTracking link: resolving...`);
+                }
+            }
+        });
+        outputDisplay.value = lines.join('\n\n');
+        outputDisplay.scrollTop = outputDisplay.scrollHeight;
+    }
+
+    /**
+     * Poll for tracking keys assigned by Python poller.
+     * Checks /api/sms for each order every 3 seconds, up to 30 attempts (90 seconds).
+     */
+    async function pollBulkTrackingKeys(pendingOrders, allOrders, outputDisplay, progressText) {
+        let retries = 0;
+        const maxRetries = 30;
+
+        while (pendingOrders.length > 0 && retries < maxRetries) {
+            retries++;
+            if (progressText) progressText.textContent = `Resolving tracking links... (attempt ${retries}/${maxRetries}, ${pendingOrders.length} pending)`;
+
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const stillPending = [];
+            for (const po of pendingOrders) {
+                try {
+                    const res = await authFetch(`/api/sms?order_id=${encodeURIComponent(po.order_id)}`);
+                    const smsData = await res.json();
+                    if (smsData.success && smsData.tracking_key) {
+                        po.tracking_key = smsData.tracking_key;
+                    } else {
+                        stillPending.push(po);
+                    }
+                } catch (e) {
+                    stillPending.push(po);
+                }
+            }
+
+            // Update output with any newly resolved tracking keys
+            updateBulkOutput(allOrders, outputDisplay);
+
+            pendingOrders.length = 0;
+            if (stillPending.length > 0) {
+                pendingOrders.push(...stillPending);
+            }
+        }
+    }
 
     function startPolling(orderId, startSeconds) {
         stopIntervals();
+        lastSmsCount = startSeconds !== undefined ? -1 : 0; // -1 for restored orders, 0 for new orders
         countdownSeconds = startSeconds !== undefined ? startSeconds : (window.otpExpiryMinutes || 5) * 60;
 
         pollSmsStatus(orderId);
@@ -894,7 +1600,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const min = Math.floor(countdownSeconds / 60);
                 const sec = countdownSeconds % 60;
-                waitingStatusText.textContent = `Waiting for SMS (Expires in ${min}:${sec < 10 ? '0' : ''}${sec})...`;
+                const prefix = (orderStatusBadge && orderStatusBadge.textContent === 'Done') 
+                    ? 'SMS received! Checking for subsequent messages' 
+                    : 'Waiting for SMS';
+                waitingStatusText.textContent = `${prefix} (Expires in ${min}:${sec < 10 ? '0' : ''}${sec})...`;
             }
         }, 1000);
     }
@@ -904,22 +1613,41 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    if (data.otp && data.otp !== '------' && data.otp !== 'Not Received') {
-                        setOtpDisplayValue(data.otp);
+                    if (data.tracking_key) {
+                        currentTrackingKey = data.tracking_key;
+                        if (copyTrackingLinkBtn) copyTrackingLinkBtn.style.display = 'block';
+                    }
+
+                    const msgCount = (data.sms_messages && Array.isArray(data.sms_messages)) ? data.sms_messages.length : 0;
+                    if (lastSmsCount === -1) {
+                        lastSmsCount = msgCount;
+                    } else if (msgCount > lastSmsCount) {
+                        playChimeNotification();
+                        lastSmsCount = msgCount;
+                    }
+
+                    if (msgCount > 0) {
+                        setOtpDisplayValue(data.sms_messages, true);
                         copyOtpBtn.disabled = false;
-                        waitingStatusText.textContent = 'OTP received! Checking for subsequent messages...';
+                        
+                        const min = Math.floor(countdownSeconds / 60);
+                        const sec = countdownSeconds % 60;
+                        waitingStatusText.textContent = `SMS received! Checking for subsequent messages (Expires in ${min}:${sec < 10 ? '0' : ''}${sec})...`;
+                        
                         loadHistory();
                     }
 
                     if (data.status === 'COMPLETED') {
-                        stopIntervals();
+                        // DO NOT STOP INTERVALS! Keep polling so subsequent SMS are fetched.
                         orderStatusBadge.textContent = 'Done';
                         orderStatusBadge.className = 'badge-custom badge-completed';
                         
                         smsStatusContainer.className = 'sms-status-container glow-success';
-                        waitingSpinner.classList.add('d-none');
-                        waitingStatusText.textContent = 'Activation complete.';
-                        endActivationBtn.style.display = 'none';
+                        waitingSpinner.classList.remove('d-none'); // Keep spinner spinning
+                        
+                        if (endActivationBtn) {
+                            endActivationBtn.style.display = 'block'; // Keep stop button visible
+                        }
                         
                         loadProfile();
                         loadHistory();
@@ -937,7 +1665,9 @@ document.addEventListener('DOMContentLoaded', () => {
         smsStatusContainer.className = 'sms-status-container';
         waitingSpinner.classList.add('d-none');
         waitingStatusText.textContent = 'Timer expired. Order is pending.';
-        endActivationBtn.style.display = 'none';
+        if (endActivationBtn) {
+            endActivationBtn.style.display = 'none';
+        }
         loadProfile();
         loadHistory();
     }
@@ -957,11 +1687,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         hasAttemptedRestore = true;
         const latestOrder = lastHistoryData[0];
-        if (latestOrder && latestOrder.status === 'PENDING') {
+        const hasEnded = sessionStorage.getItem('ended_order_' + latestOrder.order_id) === 'true';
+
+        if (latestOrder && (latestOrder.status === 'PENDING' || latestOrder.status === 'COMPLETED') && !hasEnded) {
             const elapsedMs = Date.now() - new Date(latestOrder.created_at).getTime();
             const expiryMs = (window.otpExpiryMinutes || 4) * 60 * 1000;
             if (elapsedMs < expiryMs) {
                 currentOrderId = latestOrder.order_id;
+                currentTrackingKey = latestOrder.tracking_key;
                 
                 let formattedNumber = latestOrder.number;
                 if (formattedNumber && !formattedNumber.startsWith('+')) {
@@ -971,13 +1704,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 numberDisplay.style.cursor = 'pointer';
                 
                 orderIdDisplay.textContent = latestOrder.order_id;
-                orderStatusBadge.textContent = 'Not Received';
-                orderStatusBadge.className = 'badge-custom badge-pending';
+                
+                if (latestOrder.status === 'COMPLETED') {
+                    orderStatusBadge.textContent = 'Done';
+                    orderStatusBadge.className = 'badge-custom badge-completed';
+                    smsStatusContainer.className = 'sms-status-container glow-success';
+                } else {
+                    orderStatusBadge.textContent = 'Not Received';
+                    orderStatusBadge.className = 'badge-custom badge-pending';
+                    smsStatusContainer.className = 'sms-status-container glow-pending';
+                }
 
-                setOtpDisplayValue(latestOrder.otp && latestOrder.otp !== 'Not Received' && latestOrder.otp !== '------' ? latestOrder.otp : '------');
-                copyOtpBtn.disabled = !(latestOrder.otp && latestOrder.otp !== 'Not Received' && latestOrder.otp !== '------');
-                endActivationBtn.style.display = 'block';
-                smsStatusContainer.className = 'sms-status-container glow-pending';
+                // Re-compile legacy columns or sms_messages JSONB to restore most recent message
+                const restoredMsgs = [];
+                for (let i = 1; i <= 10; i++) {
+                    const msgVal = latestOrder[`message_${i}`];
+                    if (msgVal) restoredMsgs.push(msgVal);
+                }
+                if (restoredMsgs.length === 0 && Array.isArray(latestOrder.sms_messages)) {
+                    restoredMsgs.push(...latestOrder.sms_messages.map(m => m.text));
+                }
+
+                if (restoredMsgs.length > 0) {
+                    setOtpDisplayValue(restoredMsgs, true);
+                    copyOtpBtn.disabled = false;
+                } else {
+                    setOtpDisplayValue('------');
+                    copyOtpBtn.disabled = true;
+                }
+
+                if (copyTrackingLinkBtn && currentTrackingKey) {
+                    copyTrackingLinkBtn.style.display = 'block';
+                }
+
+                if (endActivationBtn) {
+                    endActivationBtn.style.display = 'block';
+                }
 
                 waitingSpinner.classList.remove('d-none');
                 
@@ -988,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleCopyOtp() {
-        const text = otpCodeDisplay.textContent.trim();
+        const text = currentLatestOtp || otpCodeDisplay.textContent.trim();
         if (text && text !== '------') {
             navigator.clipboard.writeText(text).then(() => {
                 const orig = copyOtpBtn.innerHTML;
@@ -1010,50 +1772,59 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleEndActivation() {
         if (!currentOrderId) return;
         
-        endActivationBtn.disabled = true;
-        endActivationBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ending...';
-
-        authFetch('/api/buy/end', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_id: currentOrderId })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                stopIntervals();
-                
-                orderStatusBadge.textContent = data.status === 'COMPLETED' ? 'Done' : 'Pending';
-                orderStatusBadge.className = `badge-custom badge-${data.status === 'COMPLETED' ? 'completed' : 'pending'}`;
-                smsStatusContainer.className = 'sms-status-container';
-                
-                waitingSpinner.classList.add('d-none');
-                waitingStatusText.textContent = data.status === 'COMPLETED' ? 'Activation complete.' : 'Activation stopped.';
-                
-                if (data.otp && data.otp !== 'Not Received') {
-                    setOtpDisplayValue(data.otp);
-                    copyOtpBtn.disabled = false;
-                } else {
-                    setOtpDisplayValue('------');
-                    copyOtpBtn.disabled = true;
-                }
-
-                endActivationBtn.style.display = 'none';
-
-                showAlert('Activation successfully finalized.', 'success');
-                loadProfile();
-                loadHistory();
-            } else {
-                showAlert(data.message, 'danger');
-            }
-            endActivationBtn.disabled = false;
-            endActivationBtn.innerHTML = '<i class="fa-solid fa-circle-stop me-2"></i>End Activation';
-        })
-        .catch(err => {
-            showAlert(err.message, 'danger');
-            endActivationBtn.disabled = false;
-            endActivationBtn.innerHTML = '<i class="fa-solid fa-circle-stop me-2"></i>End Activation';
-        });
+         if (endActivationBtn) {
+             endActivationBtn.disabled = true;
+             endActivationBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Ending...';
+         }
+ 
+         authFetch('/api/buy/end', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ order_id: currentOrderId })
+         })
+         .then(res => res.json())
+         .then(data => {
+             if (data.success) {
+                 stopIntervals();
+                 sessionStorage.setItem('ended_order_' + currentOrderId, 'true');
+                 
+                 orderStatusBadge.textContent = data.status === 'COMPLETED' ? 'Done' : 'Pending';
+                 orderStatusBadge.className = `badge-custom badge-${data.status === 'COMPLETED' ? 'completed' : 'pending'}`;
+                 smsStatusContainer.className = 'sms-status-container';
+                 
+                 waitingSpinner.classList.add('d-none');
+                 waitingStatusText.textContent = data.status === 'COMPLETED' ? 'Activation complete.' : 'Activation stopped.';
+                 
+                 if (data.otp && data.otp !== 'Not Received') {
+                     setOtpDisplayValue(data.otp);
+                     copyOtpBtn.disabled = false;
+                 } else {
+                     setOtpDisplayValue('------');
+                     copyOtpBtn.disabled = true;
+                 }
+ 
+                 if (endActivationBtn) {
+                     endActivationBtn.style.display = 'none';
+                 }
+ 
+                 showAlert('Activation successfully finalized.', 'success');
+                 loadProfile();
+                 loadHistory();
+             } else {
+                 showAlert(data.message, 'danger');
+             }
+             if (endActivationBtn) {
+                 endActivationBtn.disabled = false;
+                 endActivationBtn.innerHTML = '<i class="fa-solid fa-circle-stop me-2"></i>End Activation';
+             }
+         })
+         .catch(err => {
+             showAlert(err.message, 'danger');
+             if (endActivationBtn) {
+                 endActivationBtn.disabled = false;
+                 endActivationBtn.innerHTML = '<i class="fa-solid fa-circle-stop me-2"></i>End Activation';
+             }
+         });
     }
 
     /**
@@ -1065,49 +1836,94 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (data.success) {
                     lastHistoryData = data.orders;
-                    renderHistoryTable();
+                    
+                    const searchInput = document.getElementById('historySearchInput');
+                    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                    if (query) {
+                        const filtered = lastHistoryData.filter(o => {
+                            const orderId = String(o.order_id || '').toLowerCase();
+                            const service = String(o.service || '').toLowerCase();
+                            const number = String(o.number || '').toLowerCase();
+                            const statusText = String(o.status || '').toLowerCase();
+                            const trackingKey = String(o.tracking_key || '').toLowerCase();
+                            const otp = String(o.otp || '').toLowerCase();
+                            
+                            return orderId.includes(query) || 
+                                   service.includes(query) || 
+                                   number.includes(query) || 
+                                   statusText.includes(query) || 
+                                   trackingKey.includes(query) ||
+                                   otp.includes(query);
+                        });
+                        renderHistoryTable(filtered);
+                    } else {
+                        renderHistoryTable();
+                    }
                     restoreActiveOrderIfAny();
                 }
             });
     }
 
-    function renderHistoryTable() {
+    function renderHistoryTable(dataToRender = lastHistoryData) {
         orderHistoryTableBody.innerHTML = '';
-        if (lastHistoryData.length === 0) {
+        if (dataToRender.length === 0) {
             orderHistoryTableBody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No orders found.</td></tr>`;
             return;
         }
-        lastHistoryData.forEach(o => {
+        dataToRender.forEach(o => {
             const tr = document.createElement('tr');
-            const sc = o.status === 'COMPLETED' ? 'badge-completed' : (o.status === 'PENDING' ? 'badge-pending' : (o.status === 'REFUNDED' ? 'badge-expired' : 'badge-expired'));
-            let statusText = o.status;
-            if (o.status === 'PENDING') statusText = 'Pending';
-            else if (o.status === 'COMPLETED') statusText = 'Done';
-            else if (o.status === 'REFUNDED') statusText = 'Refunded';
-            else if (o.status === 'EXPIRED') statusText = 'Expired';
+            
+            // Messages count cell logic
+            let msgCount = 0;
+            for (let i = 1; i <= 10; i++) {
+                if (o[`message_${i}`]) {
+                    msgCount++;
+                }
+            }
+            if (o.sms_messages && Array.isArray(o.sms_messages) && o.sms_messages.length > msgCount) {
+                msgCount = o.sms_messages.length;
+            }
+            if (msgCount === 0 && o.otp && o.otp !== '------' && o.otp !== 'Not Received' && o.otp !== 'Waiting...') {
+                msgCount = 1;
+            }
+            const msgCountMarkup = `<span class="fw-semibold badge ${msgCount > 0 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border'}" style="font-size: 0.82rem; padding: 4px 10px; border-radius: 6px;">${msgCount}</span>`;
 
-            // OTP cell logic
-            const hasMsg = o.full_message && o.full_message.trim().length > 0;
-            const otpCodeMarkup = hasMsg 
-                ? `<code class="fs-6 fw-bold text-success">${o.otp || '------'}</code>` 
-                : `<span class="text-muted small">Waiting...</span>`;
+            // Determine dynamic status: if any message received, status is COMPLETED ("Done")
+            let currentStatus = o.status;
+            if (msgCount > 0 && currentStatus !== 'REFUNDED') {
+                currentStatus = 'COMPLETED';
+            }
+
+            const sc = currentStatus === 'COMPLETED' ? 'badge-completed' : (currentStatus === 'PENDING' ? 'badge-pending' : (currentStatus === 'REFUNDED' ? 'badge-expired' : 'badge-expired'));
+            let statusText = currentStatus;
+            if (currentStatus === 'PENDING') statusText = 'Pending';
+            else if (currentStatus === 'COMPLETED') statusText = 'Done';
+            else if (currentStatus === 'REFUNDED') statusText = 'Refunded';
+            else if (currentStatus === 'EXPIRED') statusText = 'Expired';
 
             // Message cell logic
+            const hasMsg = o.full_message && o.full_message.trim().length > 0;
             const messageMarkup = hasMsg
-                ? `<button class="btn btn-sm btn-success px-3 py-1 btn-view-msg" data-msg="${encodeURIComponent(o.full_message)}"><i class="fa-solid fa-circle-check me-1"></i>Received</button>`
+                ? `<button class="btn btn-sm btn-success px-3 py-1 btn-view-msg" data-order-id="${o.order_id}" data-number="${o.number}" data-msg="${encodeURIComponent(o.full_message)}"><i class="fa-solid fa-circle-check me-1"></i>Received</button>`
                 : `<button class="btn btn-sm btn-secondary opacity-75 px-3 py-1" disabled><i class="fa-regular fa-circle-question me-1"></i>Not Received</button>`;
 
             // Action cell logic
-            const actionMarkup = o.status === 'PENDING'
+            const actionMarkup = currentStatus === 'PENDING'
                 ? `<button class="btn btn-sm btn-primary px-3 py-1 btn-fetch-otp" data-order-id="${o.order_id}"><i class="fa-solid fa-rotate-right me-1"></i>Fetch OTP</button>`
-                : `<button class="btn btn-sm btn-outline-secondary px-3 py-1" disabled>${o.status === 'REFUNDED' ? 'Refunded' : 'No Action'}</button>`;
+                : `<button class="btn btn-sm btn-primary px-3 py-1 btn-history-fetch" data-order-id="${o.order_id}" data-number="${o.number}"><i class="fa-solid fa-envelope me-1"></i>Fetch</button>`;
+
+            const bulkBadge = o.is_bulk ? `<span class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size: 0.65rem; padding: 2px 4px;">Bulk</span>` : '';
+            const trackingLink = `https://access.novatixdigi.online/${o.tracking_key}`;
+            const copyLinkMarkup = o.tracking_key 
+                ? `<button class="btn btn-sm btn-copy-link border-0" data-link="${trackingLink}" title="Copy tracking link" style="background-color: var(--primary-light); color: var(--primary); font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; vertical-align: middle; cursor: pointer; text-decoration: none;"><i class="fa-solid fa-link"></i>Copy Link</button>`
+                : '';
 
             tr.innerHTML = `
-                <td><code>${o.order_id}</code></td>
-                <td>${o.service}</td>
+                <td><div class="d-flex align-items-center justify-content-end justify-content-lg-start gap-1 flex-wrap"><code class="font-monospace text-secondary me-1" style="font-size: 0.8rem; word-break: break-all;">${o.order_id}</code>${copyLinkMarkup}</div></td>
+                <td>${o.service}${bulkBadge}</td>
                 <td><strong>${o.number}</strong></td>
                 <td>${formatPrice(parseFloat(o.price) / 278.50)}</td>
-                <td>${otpCodeMarkup}</td>
+                <td>${msgCountMarkup}</td>
                 <td>${messageMarkup}</td>
                 <td class="small text-secondary">${o.formatted_time}</td>
                 <td><span class="badge-custom ${sc}">${statusText}</span></td>
@@ -1140,6 +1956,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     activeDepositMethods = data.methods;
                     renderDepositMethodsDropdown();
+                    
+                    const noticeBox = document.getElementById('depositNoticeBox');
+                    const noticeContent = document.getElementById('depositNoticeContent');
+                    if (noticeBox && noticeContent) {
+                        if (data.depositNotice && data.depositNotice.trim() !== '') {
+                            noticeContent.textContent = data.depositNotice;
+                            noticeBox.classList.remove('d-none');
+                        } else {
+                            noticeBox.classList.add('d-none');
+                        }
+                    }
                 }
             });
     }
