@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live SMS Activation Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css?v=1.0.2">
+    <link rel="stylesheet" href="/style.css?v=1.0.3">
 </head>
 <body>
     <div class="container">
@@ -68,27 +68,6 @@
     <!-- Alert toast -->
     <div class="toast" id="toast">Copied to clipboard!</div>
 
-    <!-- Bottom Sheet Modal for Copy Options -->
-    <div class="bottom-sheet" id="copy-sheet">
-        <div class="bottom-sheet-overlay" onclick="closeCopySheet()"></div>
-        <div class="bottom-sheet-content">
-            <div class="bottom-sheet-header">
-                <h4>Select Copy Option</h4>
-                <button class="btn-close-sheet" onclick="closeCopySheet()">&times;</button>
-            </div>
-            <div class="bottom-sheet-body">
-                <button class="sheet-action-btn primary" id="btn-copy-otp">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; margin-right: 4px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Copy OTP Code Only
-                </button>
-                <button class="sheet-action-btn secondary" id="btn-copy-full">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Copy Full Message Text
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script src="/app.js?v=1.0.9"></script>
+    <script src="/app.js?v=1.1.1"></script>
 </body>
 </html>

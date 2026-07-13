@@ -54,30 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // Setup bottom sheet copy button listeners
-    const btnOtp = document.getElementById('btn-copy-otp');
-    if (btnOtp) {
-        btnOtp.addEventListener('click', () => {
-            if (activeSheetOtp) {
-                navigator.clipboard.writeText(activeSheetOtp).then(() => {
-                    showToast('OTP code copied!');
-                    closeCopySheet();
-                });
-            }
-        });
-    }
 
-    const btnFull = document.getElementById('btn-copy-full');
-    if (btnFull) {
-        btnFull.addEventListener('click', () => {
-            if (activeSheetText) {
-                navigator.clipboard.writeText(activeSheetText).then(() => {
-                    showToast('Full message text copied!');
-                    closeCopySheet();
-                });
-            }
-        });
-    }
     
     // Dynamically resolve the backend API URL
     await initConfig();
@@ -263,7 +240,16 @@ function renderTracker(data) {
 
             copyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                openCopySheet(otpText, msgText);
+                navigator.clipboard.writeText(otpText).then(() => {
+                    const origText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = 'Copied!';
+                    const origBg = copyBtn.style.background;
+                    copyBtn.style.background = '#059669'; // darker green accent for Copied state
+                    setTimeout(() => {
+                        copyBtn.innerHTML = origText;
+                        copyBtn.style.background = origBg;
+                    }, 1500);
+                });
             });
             header.appendChild(copyBtn);
             item.appendChild(header);
@@ -332,29 +318,4 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-let activeSheetOtp = '';
-let activeSheetText = '';
 
-function openCopySheet(otp, text) {
-    activeSheetOtp = otp || '';
-    activeSheetText = text || '';
-    
-    const btnOtp = document.getElementById('btn-copy-otp');
-    if (!activeSheetOtp) {
-        if (btnOtp) btnOtp.style.display = 'none';
-    } else {
-        if (btnOtp) btnOtp.style.display = 'flex';
-    }
-    
-    const sheet = document.getElementById('copy-sheet');
-    if (sheet) {
-        sheet.classList.add('active');
-    }
-}
-
-function closeCopySheet() {
-    const sheet = document.getElementById('copy-sheet');
-    if (sheet) {
-        sheet.classList.remove('active');
-    }
-}
