@@ -39,7 +39,8 @@ export async function GET(request) {
                                 price: parseFloat(item.unit_price) + 0.10,
                                 stock: parseInt(item.stock),
                                 group_id: group.group_id.toString(),
-                                group_name: group.group_name
+                                group_name: group.group_name,
+                                conf_price: Array.isArray(item.conf_price) ? item.conf_price : []
                             });
                         });
                     });
@@ -56,9 +57,11 @@ export async function GET(request) {
             const dbMatch = dbServicesFiltered.find(db => db.service_id === s.code);
             return {
                 ...s,
+                parent_group_name: s.group_name,
                 group_name: dbMatch ? dbMatch.group_name : (s.group_name || 'Standard Operators'),
                 cost_price: dbMatch ? parseFloat(dbMatch.cost_price) : s.cost_price,
                 price: dbMatch ? parseFloat(dbMatch.sell_price) : s.price,
+                validity_period: dbMatch ? (dbMatch.validity_period || 4) : 4,
                 enabled: !!dbMatch
             };
         });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders } from '@/lib/db';
+import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders, resolveBestTime } from '@/lib/db';
 import { verifyAuth } from '@/lib/middleware';
 import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
 import { sanitizeText } from '@/lib/sanitize';
@@ -40,6 +40,7 @@ export async function POST(request) {
 
         // 1. Fetch dynamic pricing from database services table
         let expiryDuration = 4;
+        let validityPeriod = 4;
         if (!isMock && supabase) {
             const { data: sRow } = await supabase
                 .from('services')
@@ -52,6 +53,7 @@ export async function POST(request) {
                 costPrice = parseFloat(sRow.cost_price);
                 appName = sRow.app_name;
                 groupName = sRow.group_name;
+                validityPeriod = sRow.validity_period || 4;
             } else {
                 return NextResponse.json({ success: false, message: 'This service product is currently unavailable.' });
             }
@@ -109,8 +111,8 @@ export async function POST(request) {
             };
             mockOrders.unshift(newMockOrder);
         } else {
-            // Call live gateway to buy a number (use lease code time=4 for Whatsapp/FB rent lease length)
-            const buyUrl = `${apiBase.replace(/\/$/, '')}/api/v1/get?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(service)}&num=1&time=4`;
+            // Call live gateway to buy a number
+            const buyUrl = `${apiBase.replace(/\/$/, '')}/api/v1/get?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(service)}&num=1&time=${validityPeriod}`;
             const buyResponse = await makeRequest(buyUrl);
 
             if (!buyResponse) {

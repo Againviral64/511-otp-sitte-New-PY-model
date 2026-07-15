@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Global states
     let availableServices = [];
+    let availableGroups = [];
     let currentOrderId = null;
     let pollInterval = null;
     let countdownInterval = null;
@@ -1189,6 +1190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
 
+                    availableGroups = data.countries;
                     availableServices = data.services;
                     renderServicesTable();
                     restoreActiveOrderIfAny();
@@ -1212,10 +1214,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         filtered.forEach(s => {
+            const groupMatch = availableGroups.find(g => g.code === s.group_id);
+            const groupName = groupMatch ? `${groupMatch.flag || '🌐'} ${groupMatch.name}` : `Group ${s.group_id}`;
+            
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${s.name}</strong></td>
-                <td><span class="badge bg-secondary">Group ${s.group_id}</span></td>
+                <td><span class="badge bg-secondary">${groupName}</span></td>
                 <td><code>${s.code}</code></td>
                 <td><strong class="text-primary">${formatPrice(s.price)}</strong></td>
                 <td><span class="badge bg-success">${s.stock} Numbers</span></td>

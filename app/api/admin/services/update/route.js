@@ -5,7 +5,7 @@ import { verifyAdmin } from '@/lib/middleware';
 export async function POST(request) {
     try {
         await verifyAdmin(request);
-        const { service_id, cost_price, sell_price, app_name, group_name } = await request.json();
+        const { service_id, cost_price, sell_price, app_name, group_name, validity_period } = await request.json();
 
         if (!service_id || isNaN(cost_price) || isNaN(sell_price)) {
             return NextResponse.json({ success: false, message: 'Please provide valid service code and pricing inputs.' });
@@ -28,9 +28,13 @@ export async function POST(request) {
             .maybeSingle();
 
         if (sRow) {
+            const updatePayload = { cost_price: parseFloat(cost_price), sell_price: parseFloat(sell_price) };
+            if (validity_period !== undefined && [1, 2, 3, 4].includes(parseInt(validity_period))) {
+                updatePayload.validity_period = parseInt(validity_period);
+            }
             const { error } = await supabase
                 .from('services')
-                .update({ cost_price: parseFloat(cost_price), sell_price: parseFloat(sell_price) })
+                .update(updatePayload)
                 .eq('service_id', service_id);
 
             if (error) return NextResponse.json({ success: false, message: error.message });
@@ -43,7 +47,8 @@ export async function POST(request) {
                     app_name: app_name || 'Manual App',
                     cost_price: parseFloat(cost_price),
                     sell_price: parseFloat(sell_price),
-                    stock: 100
+                    stock: 100,
+                    validity_period: (validity_period !== undefined && [1, 2, 3, 4].includes(parseInt(validity_period))) ? parseInt(validity_period) : 4
                 }]);
 
             if (error) return NextResponse.json({ success: false, message: error.message });

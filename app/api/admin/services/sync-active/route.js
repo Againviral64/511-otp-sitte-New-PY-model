@@ -75,7 +75,8 @@ export async function POST(request) {
                         app_name: liveMatch.name,
                         cost_price: liveMatch.cost_price,
                         sell_price: liveMatch.price,
-                        stock: liveMatch.stock
+                        stock: liveMatch.stock,
+                        validity_period: 4
                     };
                 } else {
                     return {
@@ -84,7 +85,8 @@ export async function POST(request) {
                         app_name: 'Custom App',
                         cost_price: 0.10,
                         sell_price: 0.20,
-                        stock: 100
+                        stock: 100,
+                        validity_period: 4
                     };
                 }
             });

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders } from '@/lib/db';
+import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders, resolveBestTime } from '@/lib/db';
 import { verifyAuth } from '@/lib/middleware';
 import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
 
@@ -52,6 +52,7 @@ export async function POST(request) {
         let costPrice = 0.400;
         let appName = 'OTP App';
         let groupName = 'Operators Group';
+        let validityPeriod = 4;
 
         // 1. Fetch dynamic pricing from database services table
         if (!isMock && supabase) {
@@ -66,6 +67,7 @@ export async function POST(request) {
                 costPrice = parseFloat(sRow.cost_price);
                 appName = sRow.app_name;
                 groupName = sRow.group_name;
+                validityPeriod = sRow.validity_period || 4;
             } else {
                 return NextResponse.json({ success: false, message: 'This service product is currently unavailable.' });
             }
@@ -89,7 +91,10 @@ export async function POST(request) {
         const successfulOrders = [];
         const failedOrders = [];
 
-        // 3. Purchase loop
+        // 3. Admin-defined validity period
+        const timeParam = isMock ? 4 : validityPeriod;
+
+        // 4. Purchase loop
         for (let i = 0; i < qty; i++) {
             let orderId = '';
             let number = '';
@@ -124,7 +129,7 @@ export async function POST(request) {
                 });
             } else {
                 // Call live gateway to buy a number
-                const buyUrl = `${apiBase.replace(/\/$/, '')}/api/v1/get?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(service)}&num=1&time=4`;
+                const buyUrl = `${apiBase.replace(/\/$/, '')}/api/v1/get?key=${encodeURIComponent(apiToken)}&id=${encodeURIComponent(service)}&num=1&time=${timeParam}`;
                 console.log(`[Bulk] Purchasing order ${i + 1}/${qty}, URL: ${buyUrl.replace(apiToken, '***')}`);
                 const buyResponse = await makeBulkRequest(buyUrl);
 

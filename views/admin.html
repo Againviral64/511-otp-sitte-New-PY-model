@@ -827,6 +827,18 @@
                         </div>
                         <div class="form-text mt-1 text-primary fw-bold" id="calculatedPricePreview">Calculated: ₨ 0.00</div>
                     </div>
+
+                    <!-- Validity Period Selection -->
+                    <div class="mb-3" id="validityPeriodContainer">
+                        <label class="form-label fw-bold"><i class="fa-solid fa-clock me-1 text-primary"></i>Validity Period (Stock Pool)</label>
+                        <select class="form-select" id="modalValidityPeriod" style="border-radius: 8px;">
+                            <option value="1">1 - 10 Days (Discount 20%)</option>
+                            <option value="2">10 - 30 Days (Discount 10%)</option>
+                            <option value="3">30 - 60 Days (Original Price)</option>
+                            <option value="4" selected>60 - 90 Days (Markup 20%)</option>
+                        </select>
+                        <div class="form-text mt-1" id="validityStockInfo">Select the stock pool for this service.</div>
+                    </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: var(--radius);">Cancel</button>
@@ -1815,14 +1827,33 @@
                 sorted.forEach((s, index) => {
                     const tr = document.createElement('tr');
                     const isChecked = s.enabled ? 'checked' : '';
+                    
+                    const parentGroupText = s.parent_group_name ? `<div class="small text-muted mt-1">Seller: ${s.parent_group_name}</div>` : '';
+                    const stockText = s.stock !== undefined ? `<div class="small text-success fw-semibold mt-1">Stock: ${s.stock.toLocaleString()}</div>` : '';
+                    
+                    const validityLabels = {
+                        1: '1-10 Days (Discount 20%)',
+                        2: '10-30 Days (Discount 10%)',
+                        3: '30-60 Days (Original Price)',
+                        4: '60-90 Days (Markup 20%)'
+                    };
+                    const validityText = s.validity_period ? `<div class="small text-primary fw-semibold mt-1">Period: ${validityLabels[s.validity_period] || '60-90 Days'}</div>` : '';
+                    
                     tr.innerHTML = `
                         <td><span class="text-muted fw-bold">${index + 1}</span></td>
                         <td style="text-align: center;">
                             <input type="checkbox" class="form-check-input service-check-item" data-id="${s.code}" ${isChecked} style="transform: scale(1.25); cursor: pointer;">
                         </td>
                         <td><code class="font-monospace">${s.code}</code></td>
-                        <td><strong class="text-dark">${s.name}</strong></td>
-                        <td><span class="badge bg-light text-dark border">${s.group_name || 'Standard'}</span></td>
+                        <td>
+                            <strong class="text-dark">${s.name}</strong>
+                            ${stockText}
+                            ${validityText}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border">${s.group_name || 'Standard'}</span>
+                            ${parentGroupText}
+                        </td>
                         <td>${formatPrice(s.cost_price)}</td>
                         <td><strong class="text-primary">${formatPrice(s.price)}</strong></td>
                         <td class="text-end">
@@ -1959,6 +1990,53 @@
                 manualPriceContainer.classList.remove('d-none');
                 percentMarkupContainer.classList.add('d-none');
 
+                // Populate Validity Period dropdown with live stock data
+                const vpSelect = document.getElementById('modalValidityPeriod');
+                const vpInfo = document.getElementById('validityStockInfo');
+                const periodLabels = [
+                    '1 - 10 Days (Discount 20%)',
+                    '10 - 30 Days (Discount 10%)',
+                    '30 - 60 Days (Original Price)',
+                    '60 - 90 Days (Markup 20%)'
+                ];
+                
+                vpSelect.innerHTML = '';
+                const confPrice = service.conf_price || [];
+                
+                periodLabels.forEach((label, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx + 1;
+                    const stockCount = (confPrice[idx] && confPrice[idx].stock !== undefined) ? parseInt(confPrice[idx].stock).toLocaleString() : '?';
+                    opt.textContent = `${label} — Stock: ${stockCount}`;
+                    if (confPrice[idx] && parseInt(confPrice[idx].stock) === 0) {
+                        opt.style.color = '#dc3545';
+                    }
+                    vpSelect.appendChild(opt);
+                });
+                
+                // Pre-select saved validity period
+                vpSelect.value = service.validity_period || 4;
+                
+                const selectedConf = confPrice[(service.validity_period || 4) - 1];
+                if (selectedConf) {
+                    vpInfo.innerHTML = `<span class="text-success fw-bold">Currently selected: Stock ${parseInt(selectedConf.stock).toLocaleString()}</span>`;
+                } else {
+                    vpInfo.textContent = 'Select the stock pool for this service.';
+                }
+                
+                vpSelect.onchange = function() {
+                    const idx = parseInt(vpSelect.value) - 1;
+                    const conf = confPrice[idx];
+                    if (conf) {
+                        const stock = parseInt(conf.stock);
+                        vpInfo.innerHTML = stock > 0 
+                            ? `<span class="text-success fw-bold">Stock available: ${stock.toLocaleString()}</span>`
+                            : `<span class="text-danger fw-bold">⚠️ No stock available (0)</span>`;
+                    } else {
+                        vpInfo.textContent = 'Stock data unavailable.';
+                    }
+                };
+
                 pricingModal.show();
             };
 
@@ -2001,7 +2079,8 @@
                     body: JSON.stringify({
                         service_id: currentEditingServiceId,
                         cost_price: costPriceUSD,
-                        sell_price: sellPriceUSD
+                        sell_price: sellPriceUSD,
+                        validity_period: parseInt(document.getElementById('modalValidityPeriod').value)
                     })
                 })
                 .then(res => res.json())
