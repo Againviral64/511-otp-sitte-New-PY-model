@@ -514,6 +514,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTickets();
         loadWhatsappSupport();
         setupEventListeners();
+
+        // Default mobile view to 'bulk' since 'otp' tab is hidden
+        if (window.innerWidth <= 1023) {
+            const bulkMobileLink = document.querySelector('.mobile-nav-link[data-pane="bulk"]');
+            if (bulkMobileLink) {
+                bulkMobileLink.click();
+            }
+        }
     }
 
     function setupEventListeners() {
