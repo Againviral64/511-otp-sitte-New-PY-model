@@ -34,9 +34,13 @@ export function middleware(request) {
         const allowedOrigins = process.env.ALLOWED_ORIGINS 
             ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) 
             : [];
+
+        const requestUrl = new URL(request.url);
+        const isSameOrigin = origin === requestUrl.origin;
             
         // Check if origin is allowed (allow requests without origin header, e.g. curl, server-to-server fetches)
         const isAllowed = !origin || 
+                          isSameOrigin ||
                           allowedOrigins.includes(origin) || 
                           (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost'));
 
