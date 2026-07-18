@@ -358,7 +358,10 @@ export async function GET(request) {
             revenue_lifetime: 0,
             cost_lifetime: 0,
             profit_lifetime: 0,
-            total_liability: 0
+            total_liability: 0,
+            today_deposits: 0,
+            yesterday_deposits: 0,
+            lifetime_deposits: 0
         };
 
         const revenueLifetime = parseFloat(stats.revenue_lifetime || 0);
@@ -420,6 +423,10 @@ export async function GET(request) {
 
         const finalLiability = parseFloat(stats.total_liability || 0) * liabilityMultiplier;
 
+        const finalTodayDeposits = parseFloat(stats.today_deposits || 0) * ordersMultiplier;
+        const finalYesterdayDeposits = parseFloat(stats.yesterday_deposits || 0) * ordersMultiplier;
+        const finalLifetimeDeposits = parseFloat(stats.lifetime_deposits || 0) * lifetimeMultiplier;
+
         const finalUsersWithBalance = Math.round((usersWithBalance || 0) * liabilityMultiplier);
         const finalUsersNoBalance = Math.round((usersNoBalance || 0) * liabilityMultiplier);
         const finalUsersLowBalance = Math.round((usersLowBalance || 0) * liabilityMultiplier);
@@ -440,6 +447,9 @@ export async function GET(request) {
                 revenue_lifetime: parseFloat(finalRevenueLifetime.toFixed(3)),
                 cost_lifetime: parseFloat(finalCostLifetime.toFixed(3)),
                 profit_lifetime: parseFloat((finalRevenueLifetime - finalCostLifetime).toFixed(3)),
+                today_deposits: parseFloat(finalTodayDeposits.toFixed(3)),
+                yesterday_deposits: parseFloat(finalYesterdayDeposits.toFixed(3)),
+                lifetime_deposits: parseFloat(finalLifetimeDeposits.toFixed(3)),
                 users_with_balance: finalUsersWithBalance,
                 users_no_balance: finalUsersNoBalance,
                 users_low_balance: finalUsersLowBalance,

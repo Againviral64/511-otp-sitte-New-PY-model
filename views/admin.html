@@ -357,6 +357,34 @@
                     </div>
                 </div>
 
+                <!-- Deposit Insights Section -->
+                <div class="mb-3 mt-2">
+                    <h5 class="fw-bold text-dark"><i class="fa-solid fa-money-bill-transfer text-success me-2"></i>Deposit Insights</h5>
+                </div>
+                <div class="row g-3 mb-4">
+                    <!-- Today Deposits -->
+                    <div class="col-md-4">
+                        <div class="main-card p-3 text-center" style="border-radius: var(--radius); background: #ffffff; border-left: 4px solid #198754;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-1" style="font-size: 0.72rem;">Today Deposits</div>
+                            <h3 class="fw-bold mb-0 text-success" id="overviewDepositsToday">Rs 0.00</h3>
+                        </div>
+                    </div>
+                    <!-- Yesterday Deposits -->
+                    <div class="col-md-4">
+                        <div class="main-card p-3 text-center" style="border-radius: var(--radius); background: #ffffff; border-left: 4px solid #0dcaf0;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-1" style="font-size: 0.72rem;">Yesterday Deposits</div>
+                            <h3 class="fw-bold mb-0 text-info" id="overviewDepositsYesterday">Rs 0.00</h3>
+                        </div>
+                    </div>
+                    <!-- Lifetime Deposits -->
+                    <div class="col-md-4">
+                        <div class="main-card p-3 text-center" style="border-radius: var(--radius); background: #ffffff; border-left: 4px solid #0d6efd;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-1" style="font-size: 0.72rem;">Lifetime Deposits</div>
+                            <h3 class="fw-bold mb-0 text-primary" id="overviewDepositsLifetime">Rs 0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Liability Cards -->
                 <div class="row g-4">
                     <div class="col-lg-6">
@@ -1706,6 +1734,11 @@
                                 document.getElementById('overviewUsersLowBalance').textContent = s.users_low_balance || '0';
                                 document.getElementById('overviewSignupsInRange').textContent = s.signups_in_range || '0';
                                 document.getElementById('overviewSignupsYesterday').textContent = s.signups_yesterday || '0';
+
+                                // Populate Deposit Insights Cards
+                                document.getElementById('overviewDepositsToday').textContent = `Rs ${parseFloat(s.today_deposits || 0).toFixed(2)}`;
+                                document.getElementById('overviewDepositsYesterday').textContent = `Rs ${parseFloat(s.yesterday_deposits || 0).toFixed(2)}`;
+                                document.getElementById('overviewDepositsLifetime').textContent = `Rs ${parseFloat(s.lifetime_deposits || 0).toFixed(2)}`;
 
                                 // Dynamically update the header label of the stats cards
                                 let rangeLabel = 'Today';
