@@ -62,7 +62,7 @@ export async function GET(request) {
         const startParam = searchParams.get('start_date') || '';
         const endParam = searchParams.get('end_date') || '';
 
-        // Fetch PKR exchange rate dynamically from settings table
+        // Fetch PKR exchange rate & fake_data multipliers from settings and fake_data tables
         let pkrRate = 278.50;
         let overallMultiplier = 1.0;
         let ordersMultiplier = 1.0;
@@ -84,16 +84,16 @@ export async function GET(request) {
                     .from('fake_data')
                     .select('key, value');
 
-                if (!fakeError && fakeDataRows) {
+                if (!fakeError && fakeDataRows && fakeDataRows.length > 0) {
                     const fakeMap = {};
                     fakeDataRows.forEach(r => {
                         fakeMap[r.key] = parseFloat(r.value);
                     });
 
-                    const overall = (fakeMap.overall_percentage !== undefined ? fakeMap.overall_percentage : 100.0) / 100.0;
-                    const ordersPct = (fakeMap.orders_percentage !== undefined ? fakeMap.orders_percentage : 100.0) / 100.0;
-                    const lifetimePct = (fakeMap.lifetime_percentage !== undefined ? fakeMap.lifetime_percentage : 100.0) / 100.0;
-                    const liabilityPct = (fakeMap.liability_percentage !== undefined ? fakeMap.liability_percentage : 100.0) / 100.0;
+                    const overall = (fakeMap.overall_percentage !== undefined && !isNaN(fakeMap.overall_percentage) ? fakeMap.overall_percentage : 100.0) / 100.0;
+                    const ordersPct = (fakeMap.orders_percentage !== undefined && !isNaN(fakeMap.orders_percentage) ? fakeMap.orders_percentage : 100.0) / 100.0;
+                    const lifetimePct = (fakeMap.lifetime_percentage !== undefined && !isNaN(fakeMap.lifetime_percentage) ? fakeMap.lifetime_percentage : 100.0) / 100.0;
+                    const liabilityPct = (fakeMap.liability_percentage !== undefined && !isNaN(fakeMap.liability_percentage) ? fakeMap.liability_percentage : 100.0) / 100.0;
 
                     overallMultiplier = overall;
                     ordersMultiplier = ordersPct * overall;
@@ -342,32 +342,78 @@ export async function GET(request) {
             });
         }
 
-        // 5. Fetch lifetime statistics from admin_overview view
-        const { data: statsData, error: viewError } = await supabase
-            .from('admin_overview')
-            .select('*')
-            .maybeSingle();
+        // 5. Fetch lifetime statistics directly from tables (no admin_overview view)
+        let lifetimeOrdersCount = 0;
+        let revenueLifetime = 0;
+        let costLifetime = 0;
 
-        if (viewError) {
-            console.error('Failed to query admin_overview view:', viewError.message);
-            return NextResponse.json({ success: false, message: 'Overview view query error.' });
+        // Try RPC first for lifetime stats
+        let lifetimeRpcSuccessful = false;
+        try {
+            const { data: lifetimeStats, error: lifetimeErr } = await supabase
+                .rpc('get_range_stats', {
+                    start_time: '1970-01-01T00:00:00Z',
+                    end_time: new Date().toISOString()
+                });
+
+            if (!lifetimeErr && lifetimeStats && lifetimeStats[0]) {
+                const row = lifetimeStats[0];
+                lifetimeOrdersCount = parseInt(row.total_orders || 0);
+                revenueLifetime = parseFloat(row.total_revenue || 0);
+                costLifetime = parseFloat(row.total_cost_usd || 0) * pkrRate;
+                lifetimeRpcSuccessful = true;
+            }
+        } catch (e) {
+            console.warn('RPC get_range_stats for lifetime failed, falling back:', e.message);
         }
 
-        const stats = statsData || {
-            orders_lifetime: 0,
-            revenue_lifetime: 0,
-            cost_lifetime: 0,
-            profit_lifetime: 0,
-            total_liability: 0,
-            today_deposits: 0,
-            yesterday_deposits: 0,
-            lifetime_deposits: 0
-        };
+        // Fallback: paginated client-side aggregation from orders table
+        if (!lifetimeRpcSuccessful) {
+            let allLifetimeOrders = [];
+            let page = 0;
+            const pageSize = 1000;
 
-        const revenueLifetime = parseFloat(stats.revenue_lifetime || 0);
-        const costLifetime = parseFloat(stats.cost_lifetime || 0);
+            while (true) {
+                const { data: ltOrders, error: ltErr } = await supabase
+                    .from('orders')
+                    .select('price, status, cost_price')
+                    .range(page * pageSize, (page + 1) * pageSize - 1);
 
-        // 5.5 Query real-time user accounts insights
+                if (ltErr || !ltOrders || ltOrders.length === 0) break;
+                allLifetimeOrders = allLifetimeOrders.concat(ltOrders);
+                if (ltOrders.length < pageSize) break;
+                page++;
+            }
+
+            lifetimeOrdersCount = allLifetimeOrders.length;
+            allLifetimeOrders.forEach(o => {
+                if (o.status === 'COMPLETED') {
+                    revenueLifetime += parseFloat(o.price || 0);
+                    costLifetime += parseFloat(o.cost_price || 0) * pkrRate;
+                }
+            });
+        }
+
+        // 5.2 Fetch liability directly from profiles (sum of all balances)
+        let totalLiability = 0;
+        try {
+            let balPage = 0;
+            while (true) {
+                const { data: balRows, error: balErr } = await supabase
+                    .from('profiles')
+                    .select('balance')
+                    .range(balPage * 1000, (balPage + 1) * 1000 - 1);
+
+                if (balErr || !balRows || balRows.length === 0) break;
+                balRows.forEach(r => { totalLiability += parseFloat(r.balance || 0); });
+                if (balRows.length < 1000) break;
+                balPage++;
+            }
+        } catch (e) {
+            console.warn('Failed to fetch liability from profiles:', e.message);
+        }
+
+        // 5.3 Fetch deposits directly from deposits table
         const nowInKarachi = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
         const todStr = getKarachiDateString(nowInKarachi);
         const todStartUTC = new Date(`${todStr}T00:00:00+05:00`).toISOString();
@@ -379,6 +425,70 @@ export async function GET(request) {
         const yestStartUTC = new Date(`${yestStr}T00:00:00+05:00`).toISOString();
         const yestEndUTC = new Date(`${yestStr}T23:59:59+05:00`).toISOString();
 
+        // Today deposits
+        const { data: todayDepRows } = await supabase
+            .from('deposits')
+            .select('amount, currency')
+            .eq('status', 'APPROVED')
+            .gte('created_at', todStartUTC)
+            .lte('created_at', todEndUTC);
+
+        let todayDeposits = 0;
+        if (todayDepRows) {
+            todayDepRows.forEach(d => {
+                const amt = parseFloat(d.amount || 0);
+                if ((d.currency || 'PKR').toUpperCase() === 'USD') {
+                    todayDeposits += amt * pkrRate;
+                } else {
+                    todayDeposits += amt;
+                }
+            });
+        }
+
+        // Yesterday deposits
+        const { data: yestDepRows } = await supabase
+            .from('deposits')
+            .select('amount, currency')
+            .eq('status', 'APPROVED')
+            .gte('created_at', yestStartUTC)
+            .lte('created_at', yestEndUTC);
+
+        let yesterdayDeposits = 0;
+        if (yestDepRows) {
+            yestDepRows.forEach(d => {
+                const amt = parseFloat(d.amount || 0);
+                if ((d.currency || 'PKR').toUpperCase() === 'USD') {
+                    yesterdayDeposits += amt * pkrRate;
+                } else {
+                    yesterdayDeposits += amt;
+                }
+            });
+        }
+
+        // Lifetime deposits (paginated)
+        let lifetimeDeposits = 0;
+        let depPage = 0;
+        while (true) {
+            const { data: ltDepRows, error: ltDepErr } = await supabase
+                .from('deposits')
+                .select('amount, currency')
+                .eq('status', 'APPROVED')
+                .range(depPage * 1000, (depPage + 1) * 1000 - 1);
+
+            if (ltDepErr || !ltDepRows || ltDepRows.length === 0) break;
+            ltDepRows.forEach(d => {
+                const amt = parseFloat(d.amount || 0);
+                if ((d.currency || 'PKR').toUpperCase() === 'USD') {
+                    lifetimeDeposits += amt * pkrRate;
+                } else {
+                    lifetimeDeposits += amt;
+                }
+            });
+            if (ltDepRows.length < 1000) break;
+            depPage++;
+        }
+
+        // 5.5 Query real-time user accounts insights
         const { count: usersWithBalance } = await supabase
             .from('profiles')
             .select('*', { count: 'exact', head: true })
@@ -413,19 +523,20 @@ export async function GET(request) {
             .gte('created_at', yestStartUTC)
             .lte('created_at', yestEndUTC);
 
+        // Apply fake_data percentage multipliers
         const finalOrdersToday = Math.round(ordersTodayCount * ordersMultiplier);
         const finalRevenueToday = revenueToday * ordersMultiplier;
         const finalCostToday = costToday * ordersMultiplier;
 
-        const finalOrdersLifetime = Math.round(parseInt(stats.orders_lifetime || 0) * lifetimeMultiplier);
+        const finalOrdersLifetime = Math.round(lifetimeOrdersCount * lifetimeMultiplier);
         const finalRevenueLifetime = revenueLifetime * lifetimeMultiplier;
         const finalCostLifetime = costLifetime * lifetimeMultiplier;
 
-        const finalLiability = parseFloat(stats.total_liability || 0) * liabilityMultiplier;
+        const finalLiability = totalLiability * liabilityMultiplier;
 
-        const finalTodayDeposits = parseFloat(stats.today_deposits || 0) * ordersMultiplier;
-        const finalYesterdayDeposits = parseFloat(stats.yesterday_deposits || 0) * ordersMultiplier;
-        const finalLifetimeDeposits = parseFloat(stats.lifetime_deposits || 0) * lifetimeMultiplier;
+        const finalTodayDeposits = todayDeposits * ordersMultiplier;
+        const finalYesterdayDeposits = yesterdayDeposits * ordersMultiplier;
+        const finalLifetimeDeposits = lifetimeDeposits * lifetimeMultiplier;
 
         const finalUsersWithBalance = Math.round((usersWithBalance || 0) * liabilityMultiplier);
         const finalUsersNoBalance = Math.round((usersNoBalance || 0) * liabilityMultiplier);
