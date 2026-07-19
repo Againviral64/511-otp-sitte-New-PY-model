@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Verification Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container text-center">
+        <div class="card">
+            <h1>SMS Tracker</h1>
+            <p>Please enter your tracking key or use the tracking link provided to check your SMS verification code status.</p>
+            <div class="input-group">
+                <input type="text" id="key-input" placeholder="Enter 12-character key..." maxlength="20">
+                <button onclick="goToTracking()">Track SMS</button>
+            </div>
+            <div id="error-message" class="error-text" style="margin-top: 15px; display: none;"></div>
+        </div>
+    </div>
+    <script>
+        function goToTracking() {
+            const val = document.getElementById('key-input').value.trim();
+            const errorDiv = document.getElementById('error-message');
+            if (!val || val.length < 5) {
+                errorDiv.textContent = 'Please enter a valid tracking key.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            window.location.href = '/' + val;
+        }
+    </script>
+</body>
+</html>

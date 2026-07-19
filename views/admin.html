@@ -200,6 +200,9 @@
             <button class="nav-link" id="tab-services" data-bs-toggle="tab" data-bs-target="#pane-services" type="button" role="tab">
                 <i class="fa-solid fa-tags me-2"></i>Services & Pricing
             </button>
+            <button class="nav-link" id="tab-stock-adding" data-bs-toggle="tab" data-bs-target="#pane-stock-adding" type="button" role="tab">
+                <i class="fa-solid fa-boxes-stacked me-2"></i>Stock Adding
+            </button>
             <button class="nav-link" id="tab-admins" data-bs-toggle="tab" data-bs-target="#pane-admins" type="button" role="tab">
                 <i class="fa-solid fa-users-gear me-2"></i>Admin Profiles
             </button>
@@ -616,6 +619,132 @@
                                         <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Fetching active services...
                                     </td>
                                 </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STOCK ADDING TAB -->
+            <div class="tab-pane fade" id="pane-stock-adding" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <!-- Add Stock Card -->
+                    <div class="col-lg-6">
+                        <div class="action-card h-100 mb-0">
+                            <div class="card-heading d-flex justify-content-between align-items-center mb-3">
+                                <span><i class="fa-solid fa-square-plus text-primary me-2"></i>Add Custom Stock</span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1" style="font-size: 0.85rem;" id="stockLineCountBadge">
+                                    0 Lines Added
+                                </span>
+                            </div>
+                            
+                            <form id="addStockForm">
+                                <div class="mb-3">
+                                    <label for="stockServiceSelect" class="form-label fw-bold small text-secondary">SELECT SERVICE</label>
+                                    <select id="stockServiceSelect" class="form-select" required style="border-radius: var(--radius); font-weight: 500;">
+                                        <option value="" selected disabled>-- Select Service (e.g. Facebook, Google) --</option>
+                                    </select>
+                                    <div class="form-text small">Select the target service this stock will be assigned to.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label for="stockInputText" class="form-label fw-bold small text-secondary mb-0">PASTE STOCK DATA</label>
+                                        <span class="text-primary fw-bold small" id="stockLineCounterText"><i class="fa-solid fa-align-left me-1"></i>Lines count: 0</span>
+                                    </div>
+                                    <textarea id="stockInputText" class="form-control font-monospace" rows="9" placeholder="+13092863999|https://sms-555.com/cacgahbjbdfaec4l2obgwmtfhqscyhxo&#10;+13092863998|https://sms-555.com/cacgahbjbdfaec4l2obgwmtfhqscyhxy" required style="font-size: 0.85rem; line-height: 1.5; border-radius: var(--radius);"></textarea>
+                                    <div class="form-text small mt-1">
+                                        Format per line: <code>+NUMBER|SMS_URL</code> (e.g., <code>+13092863999|https://sms-555.com/...</code>)
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end align-items-center gap-2">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm px-3" id="clearStockInputBtn" style="border-radius: var(--radius);">Clear Input</button>
+                                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="saveStockBtn" style="border-radius: var(--radius);">
+                                        <i class="fa-solid fa-cloud-arrow-up me-2"></i>Add Stock
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Total Stock Summary & Info Card -->
+                    <div class="col-lg-6">
+                        <div class="action-card h-100 mb-0">
+                            <div class="card-heading d-flex justify-content-between align-items-center mb-3">
+                                <span><i class="fa-solid fa-warehouse text-success me-2"></i>Total Stock in Supabase</span>
+                                <button class="btn btn-sm btn-outline-primary" id="refreshStockBtn" style="border-radius: var(--radius);">
+                                    <i class="fa-solid fa-arrows-rotate me-1"></i>Refresh
+                                </button>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <div class="p-3 bg-light border rounded text-center">
+                                        <span class="text-secondary small fw-semibold text-uppercase d-block mb-1">Total Available Stock</span>
+                                        <h3 class="fw-bold text-success mb-0" id="totalAvailableStockCount">0</h3>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-3 bg-light border rounded text-center">
+                                        <span class="text-secondary small fw-semibold text-uppercase d-block mb-1">Total Used Stock</span>
+                                        <h3 class="fw-bold text-secondary mb-0" id="totalUsedStockCount">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stock Breakdown by Service -->
+                            <h6 class="fw-bold small text-secondary text-uppercase mb-2">Available Stock per Service</h6>
+                            <div class="table-responsive mb-0" style="max-height: 220px; overflow-y: auto;">
+                                <table class="table table-sm align-middle mb-0" id="stockByServiceTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Service Name</th>
+                                            <th>Service Code</th>
+                                            <th class="text-center">Available Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stockByServiceTbody">
+                                        <tr><td colspan="3" class="text-center text-muted py-3">Loading stock summary...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Records Inventory Table -->
+                <div class="action-card mt-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check text-primary me-2"></i>Stock Inventory Records</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="stockFilterService" class="form-select form-select-sm" style="width: 200px; border-radius: var(--radius);">
+                                <option value="ALL">All Services</option>
+                            </select>
+                            <select id="stockFilterStatus" class="form-select form-select-sm" style="width: 140px; border-radius: var(--radius);">
+                                <option value="ALL">All Status</option>
+                                <option value="available" selected>Available</option>
+                                <option value="used">Used</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Service</th>
+                                    <th>Phone Number</th>
+                                    <th>SMS URL</th>
+                                    <th>Status</th>
+                                    <th>Order ID</th>
+                                    <th>Created At</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockInventoryTbody">
+                                <tr><td colspan="8" class="text-center text-muted py-4">Loading stock list...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -2121,6 +2250,9 @@
                         if (data.success) {
                             activeServicesData = data.services;
                             renderServicesPricingTable(data.services);
+                            if (typeof populateStockServiceSelects === 'function') {
+                                populateStockServiceSelects();
+                            }
 
                             const uniqueGroups = [...new Set(data.services.map(s => s.group_name || 'Standard Operators'))];
                             
@@ -4277,6 +4409,227 @@
                                 });
                             });
                         }
+
+                        // ==========================================
+                        // CUSTOM STOCK ADDING MANAGEMENT LOGIC
+                        // ==========================================
+                        let stockAddingInventoryData = [];
+
+                        window.populateStockServiceSelects = function() {
+                            const select = document.getElementById('stockServiceSelect');
+                            const filterSelect = document.getElementById('stockFilterService');
+                            if (!select || !filterSelect) return;
+
+                            const currentVal = select.value;
+                            const currentFilterVal = filterSelect.value;
+
+                            select.innerHTML = '<option value="" selected disabled>-- Select Service (e.g. Facebook, Google) --</option>';
+                            filterSelect.innerHTML = '<option value="ALL">All Services</option>';
+
+                            if (Array.isArray(activeServicesData) && activeServicesData.length > 0) {
+                                const sortedServices = [...activeServicesData].sort((a, b) => a.name.localeCompare(b.name));
+                                sortedServices.forEach(s => {
+                                    const opt = document.createElement('option');
+                                    opt.value = s.code;
+                                    opt.textContent = `${s.name} (Code: ${s.code})`;
+                                    select.appendChild(opt);
+
+                                    const fOpt = document.createElement('option');
+                                    fOpt.value = s.code;
+                                    fOpt.textContent = `${s.name} (Code: ${s.code})`;
+                                    filterSelect.appendChild(fOpt);
+                                });
+                            }
+
+                            if (currentVal) select.value = currentVal;
+                            if (currentFilterVal) filterSelect.value = currentFilterVal;
+                        }
+
+                        const stockInputText = document.getElementById('stockInputText');
+                        const stockLineCounterText = document.getElementById('stockLineCounterText');
+                        const stockLineCountBadge = document.getElementById('stockLineCountBadge');
+
+                        if (stockInputText) {
+                            stockInputText.addEventListener('input', updateStockLineCount);
+                        }
+
+                        function updateStockLineCount() {
+                            if (!stockInputText) return;
+                            const text = stockInputText.value;
+                            const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+                            const count = lines.length;
+                            if (stockLineCounterText) {
+                                stockLineCounterText.innerHTML = `<i class="fa-solid fa-align-left me-1"></i>Lines count: ${count}`;
+                            }
+                            if (stockLineCountBadge) {
+                                stockLineCountBadge.textContent = `${count} Lines Added`;
+                            }
+                        }
+
+                        document.getElementById('clearStockInputBtn')?.addEventListener('click', () => {
+                            if (stockInputText) stockInputText.value = '';
+                            updateStockLineCount();
+                        });
+
+                        function loadStockAddingData() {
+                            const headers = { 'Authorization': 'Bearer ' + sessionToken };
+                            fetch('/api/admin/stock-adding', { headers })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        stockAddingInventoryData = data.stock || [];
+                                        
+                                        const totalAvail = data.summary?.total_available || 0;
+                                        const totalUsed = data.summary?.total_used || 0;
+                                        const availEl = document.getElementById('totalAvailableStockCount');
+                                        const usedEl = document.getElementById('totalUsedStockCount');
+                                        if (availEl) availEl.textContent = totalAvail;
+                                        if (usedEl) usedEl.textContent = totalUsed;
+
+                                        renderStockByServiceSummary(data.summary?.by_service || []);
+                                        renderStockInventoryTable();
+                                    }
+                                })
+                                .catch(err => console.error('Failed to load stock adding data:', err));
+                        }
+
+                        function renderStockByServiceSummary(byServiceList) {
+                            const tbody = document.getElementById('stockByServiceTbody');
+                            if (!tbody) return;
+
+                            if (byServiceList.length === 0) {
+                                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">No stock added yet.</td></tr>';
+                                return;
+                            }
+
+                            tbody.innerHTML = byServiceList.map(item => `
+                                <tr>
+                                    <td class="fw-bold text-dark">${item.service_name}</td>
+                                    <td><code class="font-monospace">${item.service_id}</code></td>
+                                    <td class="text-center"><span class="badge bg-success px-3 py-1" style="border-radius: 50px;">${item.available} in stock</span></td>
+                                </tr>
+                            `).join('');
+                        }
+
+                        function renderStockInventoryTable() {
+                            const tbody = document.getElementById('stockInventoryTbody');
+                            if (!tbody) return;
+
+                            const filterService = document.getElementById('stockFilterService')?.value || 'ALL';
+                            const filterStatus = document.getElementById('stockFilterStatus')?.value || 'ALL';
+
+                            const filtered = stockAddingInventoryData.filter(item => {
+                                const matchService = filterService === 'ALL' || item.service_id === filterService;
+                                const matchStatus = filterStatus === 'ALL' || item.status === filterStatus;
+                                return matchService && matchStatus;
+                            });
+
+                            if (filtered.length === 0) {
+                                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No matching stock items found.</td></tr>';
+                                return;
+                            }
+
+                            tbody.innerHTML = filtered.map(item => {
+                                const statusBadge = item.status === 'available'
+                                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Available</span>'
+                                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Used</span>';
+                                
+                                const createdDate = item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A';
+                                const orderText = item.order_id ? `<code class="font-monospace small">${item.order_id}</code>` : '<span class="text-muted small">-</span>';
+                                
+                                return `
+                                    <tr>
+                                        <td><span class="text-muted small">#${item.id}</span></td>
+                                        <td><strong class="text-dark">${item.service_name}</strong> <span class="text-muted small">(${item.service_id})</span></td>
+                                        <td><code class="fw-bold text-primary">${item.phone_number}</code></td>
+                                        <td><a href="${item.sms_url}" target="_blank" class="small text-truncate d-inline-block" style="max-width: 200px;" title="${item.sms_url}">${item.sms_url}</a></td>
+                                        <td>${statusBadge}</td>
+                                        <td>${orderText}</td>
+                                        <td><span class="small text-muted">${createdDate}</span></td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteStockItem('${item.id}')" title="Delete stock">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('');
+                        }
+
+                        document.getElementById('addStockForm')?.addEventListener('submit', (e) => {
+                            e.preventDefault();
+
+                            const serviceSelect = document.getElementById('stockServiceSelect');
+                            const serviceId = serviceSelect.value;
+                            const serviceName = serviceSelect.options[serviceSelect.selectedIndex]?.text.split(' (Code:')[0] || '';
+                            const stockData = stockInputText.value;
+
+                            if (!serviceId) {
+                                alert('Please select a service.');
+                                return;
+                            }
+
+                            const saveBtn = document.getElementById('saveStockBtn');
+                            saveBtn.disabled = true;
+                            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding Stock...';
+
+                            fetch('/api/admin/stock-adding', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer ' + sessionToken
+                                },
+                                body: JSON.stringify({
+                                    service_id: serviceId,
+                                    service_name: serviceName,
+                                    stock_data: stockData
+                                })
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showAdminToast(data.message || 'Stock added successfully!', 'success');
+                                    stockInputText.value = '';
+                                    updateStockLineCount();
+                                    loadStockAddingData();
+                                } else {
+                                    showAlert(data.message || 'Failed to add stock.', 'danger');
+                                }
+                            })
+                            .catch(err => showAlert('Error adding stock: ' + err.message, 'danger'))
+                            .finally(() => {
+                                saveBtn.disabled = false;
+                                saveBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-2"></i>Add Stock';
+                            });
+                        });
+
+                        document.getElementById('refreshStockBtn')?.addEventListener('click', loadStockAddingData);
+                        document.getElementById('stockFilterService')?.addEventListener('change', renderStockInventoryTable);
+                        document.getElementById('stockFilterStatus')?.addEventListener('change', renderStockInventoryTable);
+
+                        document.getElementById('tab-stock-adding')?.addEventListener('shown.bs.tab', () => {
+                            populateStockServiceSelects();
+                            loadStockAddingData();
+                        });
+
+                        window.deleteStockItem = function(id) {
+                            if (!confirm('Are you sure you want to delete this stock item?')) return;
+
+                            fetch(`/api/admin/stock-adding?id=${encodeURIComponent(id)}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': 'Bearer ' + sessionToken }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showAdminToast('Stock item deleted successfully!', 'success');
+                                    loadStockAddingData();
+                                } else {
+                                    showAlert(data.message || 'Failed to delete stock item.', 'danger');
+                                }
+                            })
+                            .catch(err => showAlert('Error deleting stock: ' + err.message, 'danger'));
+                        };
                     } else {
                         // User is logged in but is NOT an admin
                         alert('Access Denied: Admin authorization required.');

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live SMS Activation Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css?v=1.0.3">
+</head>
+<body>
+    <div class="container">
+        <!-- Main tracker card -->
+        <div class="card" id="tracker-card">
+            <div class="header">
+                <h2>SMS Live Activation</h2>
+                <div class="status-badge" id="status-badge">Checking...</div>
+            </div>
+
+            <div class="number-display" id="number-display">
+                --
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item" style="grid-column: 1 / -1;">
+                    <span class="label">Started At</span>
+                    <span class="value" id="started-at">--</span>
+                </div>
+            </div>
+
+            <!-- OTP and SMS List Section -->
+            <div class="sms-section">
+                <div class="sms-header">
+                    <h3>Received Messages</h3>
+                    <button class="btn-refresh" id="btn-refresh" onclick="fetchTrackingData()">
+                        <svg class="icon-spin" id="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+                <div id="loading-status-bar" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.85rem; color: var(--accent-color); background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 10px 14px; margin-bottom: 15px; font-weight: 500;">
+                    <div class="spinner" style="width: 14px; height: 14px; margin-bottom: 0; border: 1.5px solid rgba(255, 255, 255, 0.1); border-top: 1.5px solid var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                    <span>Loading New Messages...</span>
+                </div>
+
+                <div class="messages-list" id="messages-list">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Connecting to backend...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Card -->
+        <div class="card text-center" id="error-card" style="display: none;">
+            <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <h2 style="margin-top: 15px;">Tracking Key Error</h2>
+            <p id="error-text">This link has expired, is invalid, or the database is currently unreachable.</p>
+            <a href="/" class="btn-home">Go Back Home</a>
+        </div>
+    </div>
+
+    <!-- Alert toast -->
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script src="/app.js?v=1.1.1"></script>
+</body>
+</html>

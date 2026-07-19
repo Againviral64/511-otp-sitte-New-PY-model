@@ -102,7 +102,55 @@ export async function POST(request) {
             let number = '';
             let smsUrl = null;
 
-            if (isMock) {
+            // Check custom stock_adding table first!
+            let customStockItem = null;
+            if (!isMock && supabase) {
+                try {
+                    const { data: stockCandidate } = await supabase
+                        .from('stock_adding')
+                        .select('*')
+                        .eq('service_id', service.toString())
+                        .eq('status', 'available')
+                        .order('id', { ascending: true })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (stockCandidate) {
+                        const { data: claimedItem, error: claimErr } = await supabase
+                            .from('stock_adding')
+                            .update({
+                                status: 'used',
+                                used_at: new Date().toISOString()
+                            })
+                            .eq('id', stockCandidate.id)
+                            .eq('status', 'available')
+                            .select()
+                            .maybeSingle();
+
+                        if (!claimErr && claimedItem) {
+                            customStockItem = claimedItem;
+                        }
+                    }
+                } catch (err) {
+                    console.error('[Bulk] Error checking stock_adding:', err.message);
+                }
+            }
+
+            if (customStockItem) {
+                orderId = `MANUAL-BLK-${Math.floor(100000 + Math.random() * 900000)}-${Date.now()}`;
+                number = customStockItem.phone_number;
+                smsUrl = customStockItem.sms_url;
+
+                // Move out of stock_adding table by deleting the claimed row
+                try {
+                    await supabase
+                        .from('stock_adding')
+                        .delete()
+                        .eq('id', customStockItem.id);
+                } catch (err) {
+                    console.error('[Bulk] Failed to delete claimed stock_adding row:', err.message);
+                }
+            } else if (isMock) {
                 const randDigits = Math.floor(1000000000 + Math.random() * 9000000000).toString();
                 number = `+1 ${randDigits.substring(0,3)}-${randDigits.substring(3,6)}-${randDigits.substring(6)}`;
                 orderId = `MOCK-BLK-${Math.floor(100000 + Math.random() * 900000)}-${Date.now()}`;

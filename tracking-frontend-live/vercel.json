@@ -1,0 +1,29 @@
+{
+  "outputDirectory": ".",
+  "routes": [
+    {
+      "src": "/style.css",
+      "dest": "/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/app.js"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/track",
+      "dest": "/track.html"
+    },
+    {
+      "src": "/index",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/.+",
+      "dest": "/track.html"
+    }
+  ]
+}
