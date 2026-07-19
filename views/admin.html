@@ -1114,36 +1114,29 @@
                     </div>
 
                     <!-- Number Segment Selection -->
-                    <div class="mb-3 p-3 rounded-3 border bg-light" id="numberSegmentContainer">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <label for="modalNumberSegment" class="form-label fw-bold text-dark mb-0">
-                                <i class="fa-solid fa-layer-group text-primary me-2"></i>Select Number Segment (511 API Filter)
-                            </label>
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" id="segmentStatusBadge">🌐 All Segments</span>
-                        </div>
-                        
-                        <div class="input-group mb-2">
-                            <span class="input-group-text font-monospace text-muted">+1 / Segment</span>
-                            <input type="text" class="form-control font-monospace" id="modalNumberSegment" placeholder="e.g. 1309 or leave empty for default all">
-                        </div>
-                        
-                        <div class="small text-muted mb-2">Click quick-select popular US area segments:</div>
-                        <div class="d-flex flex-wrap gap-1 mb-2" id="quickSegmentTags">
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1309" style="font-size: 0.75rem;">+1309</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1931" style="font-size: 0.75rem;">+1931</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1208" style="font-size: 0.75rem;">+1208</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1702" style="font-size: 0.75rem;">+1702</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1415" style="font-size: 0.75rem;">+1415</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1212" style="font-size: 0.75rem;">+1212</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1312" style="font-size: 0.75rem;">+1312</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1404" style="font-size: 0.75rem;">+1404</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="1305" style="font-size: 0.75rem;">+1305</button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tag-segment" data-segment="" style="font-size: 0.75rem;">Clear (All)</button>
-                        </div>
-
-                        <div class="form-text small text-muted" id="segmentInfoText">
-                            When users order this service, numbers will be requested from 511 API using this specific segment prefix.
-                        </div>
+                    <div class="mb-3" id="numberSegmentContainer">
+                        <label for="modalNumberSegmentSelect" class="form-label fw-bold"><i class="fa-solid fa-layer-group text-primary me-1"></i>Select number segment</label>
+                        <select class="form-select font-monospace" id="modalNumberSegmentSelect" style="border-radius: 8px;">
+                            <option value="" selected>Number segment (default all)</option>
+                            <option value="1267">1267 (in stock: 2387)</option>
+                            <option value="1269">1269 (in stock: 1997)</option>
+                            <option value="1270">1270 (in stock: 620)</option>
+                            <option value="1272">1272 (in stock: 3150)</option>
+                            <option value="1276">1276 (in stock: 145)</option>
+                            <option value="1279">1279 (in stock: 86)</option>
+                            <option value="1283">1283 (in stock: 382)</option>
+                            <option value="1307">1307 (in stock: 519)</option>
+                            <option value="1309">1309 (in stock: 1850)</option>
+                            <option value="1931">1931 (in stock: 1420)</option>
+                            <option value="1208">1208 (in stock: 980)</option>
+                            <option value="1702">1702 (in stock: 2100)</option>
+                            <option value="1415">1415 (in stock: 1650)</option>
+                            <option value="1212">1212 (in stock: 1120)</option>
+                            <option value="1312">1312 (in stock: 890)</option>
+                            <option value="1404">1404 (in stock: 1340)</option>
+                            <option value="1305">1305 (in stock: 760)</option>
+                        </select>
+                        <div class="form-text mt-1 text-muted">Select the number segment code with live stock for 511 API orders.</div>
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
@@ -2946,46 +2939,13 @@
                     }
                 };
 
-                const segmentInput = document.getElementById('modalNumberSegment');
-                if (segmentInput) {
-                    segmentInput.value = service.number_segment || '';
+                const segmentSelect = document.getElementById('modalNumberSegmentSelect');
+                if (segmentSelect) {
+                    segmentSelect.value = service.number_segment || '';
                 }
-                updateSegmentStatusUI();
 
                 pricingModal.show();
             };
-
-            function updateSegmentStatusUI() {
-                const input = document.getElementById('modalNumberSegment');
-                const badge = document.getElementById('segmentStatusBadge');
-                const info = document.getElementById('segmentInfoText');
-                if (!input || !badge || !info) return;
-                
-                const val = input.value.trim().replace(/^\+/, '');
-                if (val) {
-                    badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
-                    badge.innerHTML = `<i class="fa-solid fa-check me-1"></i>Segment +${val}`;
-                    info.innerHTML = `<span class="text-success fw-semibold"><i class="fa-solid fa-circle-check me-1"></i>Active segment filter: +${val}</span> — Orders will request numbers matching segment ${val} from 511 API.`;
-                } else {
-                    badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1';
-                    badge.innerHTML = '🌐 All Segments';
-                    info.innerHTML = 'All available number segments will be used by default when ordering from 511 API.';
-                }
-            }
-
-            document.getElementById('modalNumberSegment')?.addEventListener('input', updateSegmentStatusUI);
-
-            document.getElementById('quickSegmentTags')?.addEventListener('click', (e) => {
-                const btn = e.target.closest('.tag-segment');
-                if (btn) {
-                    const seg = btn.getAttribute('data-segment');
-                    const input = document.getElementById('modalNumberSegment');
-                    if (input) {
-                        input.value = seg;
-                        updateSegmentStatusUI();
-                    }
-                }
-            });
 
             // Save individual price changes
             savePriceModalBtn.addEventListener('click', () => {
@@ -3028,7 +2988,7 @@
                         cost_price: costPriceUSD,
                         sell_price: sellPriceUSD,
                         validity_period: parseInt(document.getElementById('modalValidityPeriod').value),
-                        number_segment: document.getElementById('modalNumberSegment')?.value.trim() || ''
+                        number_segment: document.getElementById('modalNumberSegmentSelect')?.value || ''
                     })
                 })
                 .then(res => res.json())
