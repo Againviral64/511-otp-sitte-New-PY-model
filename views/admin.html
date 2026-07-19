@@ -209,6 +209,9 @@
             <button class="nav-link" id="tab-orders" data-bs-toggle="tab" data-bs-target="#pane-orders" type="button" role="tab">
                 <i class="fa-solid fa-clock-rotate-left me-2"></i>User Orders History
             </button>
+            <button class="nav-link" id="tab-add-orders" data-bs-toggle="tab" data-bs-target="#pane-add-orders" type="button" role="tab">
+                <i class="fa-solid fa-cart-plus me-2"></i>Order-Adding
+            </button>
             <button class="nav-link" id="tab-deposit-methods" data-bs-toggle="tab" data-bs-target="#pane-deposit-methods" type="button" role="tab">
                 <i class="fa-solid fa-money-check-dollar me-2"></i>Deposit Methods
             </button>
@@ -987,6 +990,45 @@
                             <i class="fa-solid fa-floppy-disk me-2"></i>Save Configurations
                         </button>
                     </form>
+                </div>
+            </div>
+
+            <!-- ORDER-ADDING TAB PANE -->
+            <div class="tab-pane fade" id="pane-add-orders" role="tabpanel">
+                <div class="main-card p-4">
+                    <h3 class="card-title mb-3"><i class="fa-solid fa-cart-plus text-primary me-2"></i>Bulk Order-Adding Tool</h3>
+                    <p class="text-secondary small">Add orders manually by pasting phone numbers and SMS URLs line by line. Each order will automatically be calculated using Facebook service cost and sell prices.</p>
+                    
+                    <form id="addOrdersForm">
+                        <div class="mb-3">
+                            <label for="addOrdersInput" class="form-label fw-bold">Numbers & SMS URLs List (1 per line)</label>
+                            <textarea class="form-control font-monospace" id="addOrdersInput" rows="10" placeholder="+13092863999|https://sms-555.com/cacgahbjbdfaec4l2obgwmtfhqscyhxo&#10;+13092864000|https://sms-555.com/anotherhashurl" required style="font-size: 0.88rem; background-color: #f8fafc; border-radius: 8px;"></textarea>
+                            <div class="form-text">Format per line: <code>+13092863999|https://sms-555.com/url_hash</code></div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary-custom px-4" id="submitAddOrdersBtn">
+                            <i class="fa-solid fa-plus me-2"></i>Submit & Add Orders
+                        </button>
+                    </form>
+
+                    <div id="addOrdersResultContainer" class="mt-4 d-none">
+                        <div class="alert" id="addOrdersAlert" role="alert"></div>
+                        <div id="addOrdersSummaryTable" class="table-responsive table-responsive-cards d-none">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>Phone Number</th>
+                                        <th>Service</th>
+                                        <th>SMS URL</th>
+                                        <th>Tracking Link</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="addOrdersResultBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -3952,6 +3994,80 @@
                         document.getElementById('applyCustomDateBtn')?.addEventListener('click', () => {
                             loadAdminLiveUpdates();
                         });
+
+                        // Bulk Order-Adding Form Submit
+                        const addOrdersForm = document.getElementById('addOrdersForm');
+                        if (addOrdersForm) {
+                            addOrdersForm.addEventListener('submit', (e) => {
+                                e.preventDefault();
+                                const ordersInput = document.getElementById('addOrdersInput');
+                                const submitBtn = document.getElementById('submitAddOrdersBtn');
+                                const resultContainer = document.getElementById('addOrdersResultContainer');
+                                const resultAlert = document.getElementById('addOrdersAlert');
+                                const resultTable = document.getElementById('addOrdersSummaryTable');
+                                const resultBody = document.getElementById('addOrdersResultBody');
+
+                                const ordersText = ordersInput.value.trim();
+                                if (!ordersText) {
+                                    alert('Please paste at least one line of number and SMS URL.');
+                                    return;
+                                }
+
+                                submitBtn.disabled = true;
+                                const origBtnHtml = submitBtn.innerHTML;
+                                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing & Adding Orders...';
+
+                                resultContainer.classList.remove('d-none');
+                                resultAlert.className = 'alert alert-info';
+                                resultAlert.textContent = 'Adding orders to database...';
+                                resultTable.classList.add('d-none');
+                                resultBody.innerHTML = '';
+
+                                fetch('/api/admin/orders/add', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': 'Bearer ' + sessionToken
+                                    },
+                                    body: JSON.stringify({ orders_text: ordersText })
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        resultAlert.className = 'alert alert-success';
+                                        resultAlert.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${data.message}`;
+                                        ordersInput.value = '';
+
+                                        if (data.orders && data.orders.length > 0) {
+                                            resultTable.classList.remove('d-none');
+                                            resultBody.innerHTML = data.orders.map(o => `
+                                                <tr>
+                                                    <td class="font-monospace small">${o.order_id}</td>
+                                                    <td class="fw-bold">${o.number}</td>
+                                                    <td><span class="badge bg-secondary">${o.service || 'Facebook'}</span></td>
+                                                    <td class="small font-monospace text-truncate" style="max-width: 200px;" title="${o.sms_url}">${o.sms_url}</td>
+                                                    <td><a href="/${o.tracking_key}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;"><i class="fa-solid fa-link me-1"></i>Track</a></td>
+                                                    <td><span class="badge bg-warning text-dark">${o.status}</span></td>
+                                                </tr>
+                                            `).join('');
+                                        }
+                                        
+                                        loadAdminLiveUpdates();
+                                    } else {
+                                        resultAlert.className = 'alert alert-danger';
+                                        resultAlert.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-2"></i>${data.message}`;
+                                    }
+                                })
+                                .catch(err => {
+                                    resultAlert.className = 'alert alert-danger';
+                                    resultAlert.innerHTML = `<i class="fa-solid fa-circle-xmark me-2"></i>Network Error: ${err.message}`;
+                                })
+                                .finally(() => {
+                                    submitBtn.disabled = false;
+                                    submitBtn.innerHTML = origBtnHtml;
+                                });
+                            });
+                        }
                     } else {
                         // User is logged in but is NOT an admin
                         alert('Access Denied: Admin authorization required.');
