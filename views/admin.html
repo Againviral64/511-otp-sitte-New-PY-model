@@ -1022,6 +1022,20 @@
 
                     <div id="addOrdersResultContainer" class="mt-4 d-none">
                         <div class="alert" id="addOrdersAlert" role="alert"></div>
+
+                        <!-- Generated Output Textarea Box -->
+                        <div id="addOrdersOutputArea" class="mb-4 d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="addOrdersOutputDisplay" class="form-label fw-bold text-dark mb-0">
+                                    <i class="fa-solid fa-list-check text-primary me-2"></i>Generated Numbers & Tracking Links Output
+                                </label>
+                                <button class="btn btn-sm btn-outline-primary px-3" id="copyAddOrdersOutputBtn" style="border-radius: 8px; font-weight: 600;">
+                                    <i class="fa-solid fa-copy me-1"></i>Copy Output Text
+                                </button>
+                            </div>
+                            <textarea class="form-control font-monospace" id="addOrdersOutputDisplay" rows="10" readonly style="font-size: 0.88rem; background-color: #f8fafc; border-radius: 8px; resize: vertical;"></textarea>
+                        </div>
+
                         <div id="addOrdersSummaryTable" class="table-responsive table-responsive-cards d-none">
                             <table class="table table-sm table-hover align-middle">
                                 <thead>
@@ -4022,6 +4036,9 @@
                                 const resultTable = document.getElementById('addOrdersSummaryTable');
                                 const resultBody = document.getElementById('addOrdersResultBody');
 
+                                const resultArea = document.getElementById('addOrdersOutputArea');
+                                const resultDisplay = document.getElementById('addOrdersOutputDisplay');
+
                                 const ordersText = ordersInput.value.trim();
                                 if (!ordersText) {
                                     alert('Please paste at least one line of number and SMS URL.');
@@ -4036,7 +4053,9 @@
                                 resultAlert.className = 'alert alert-info';
                                 resultAlert.textContent = 'Adding orders to database...';
                                 resultTable.classList.add('d-none');
+                                if (resultArea) resultArea.classList.add('d-none');
                                 resultBody.innerHTML = '';
+                                if (resultDisplay) resultDisplay.value = '';
 
                                 fetch('/api/admin/orders/add', {
                                     method: 'POST',
@@ -4055,11 +4074,27 @@
 
                                         if (data.orders && data.orders.length > 0) {
                                             resultTable.classList.remove('d-none');
+                                            if (resultArea) resultArea.classList.remove('d-none');
+
                                             const getAdminTrackUrl = (tk) => {
                                                 let d = (window.trackingDomain || document.getElementById('trackingDomainInput')?.value || 'access.novatixdigi.online').trim();
                                                 d = d.replace(/^https?:\/\//i, '').replace(/\/$/, '');
                                                 return `https://${d}/${tk}`;
                                             };
+
+                                            const outputLines = [];
+                                            data.orders.forEach((o, idx) => {
+                                                const trackUrl = getAdminTrackUrl(o.tracking_key);
+                                                outputLines.push(o.number);
+                                                outputLines.push(trackUrl);
+                                                if (idx < data.orders.length - 1) {
+                                                    outputLines.push('');
+                                                }
+                                            });
+                                            if (resultDisplay) {
+                                                resultDisplay.value = outputLines.join('\n');
+                                            }
+
                                             resultBody.innerHTML = data.orders.map(o => {
                                                 const trackUrl = getAdminTrackUrl(o.tracking_key);
                                                 return `
@@ -4091,6 +4126,22 @@
                                 .finally(() => {
                                     submitBtn.disabled = false;
                                     submitBtn.innerHTML = origBtnHtml;
+                                });
+                            });
+                        }
+
+                        // Copy Output Button Event Listener
+                        const copyAddOrdersOutputBtn = document.getElementById('copyAddOrdersOutputBtn');
+                        if (copyAddOrdersOutputBtn) {
+                            copyAddOrdersOutputBtn.addEventListener('click', () => {
+                                const outputDisplay = document.getElementById('addOrdersOutputDisplay');
+                                if (!outputDisplay || !outputDisplay.value) return;
+                                navigator.clipboard.writeText(outputDisplay.value).then(() => {
+                                    const orig = copyAddOrdersOutputBtn.innerHTML;
+                                    copyAddOrdersOutputBtn.innerHTML = '<i class="fa-solid fa-check text-success me-1"></i>Copied!';
+                                    setTimeout(() => {
+                                        copyAddOrdersOutputBtn.innerHTML = orig;
+                                    }, 1500);
                                 });
                             });
                         }
