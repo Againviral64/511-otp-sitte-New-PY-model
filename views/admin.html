@@ -2941,7 +2941,28 @@
 
                 const segmentSelect = document.getElementById('modalNumberSegmentSelect');
                 if (segmentSelect) {
-                    segmentSelect.value = service.number_segment || '';
+                    segmentSelect.innerHTML = '<option value="" selected>Loading live 511 API segment stock list...</option>';
+                    
+                    fetch(`/api/admin/services/segments?service_id=${code}`, { headers })
+                        .then(res => res.json())
+                        .then(data => {
+                            segmentSelect.innerHTML = '<option value="">Number segment (default all)</option>';
+                            if (data.success && Array.isArray(data.segments)) {
+                                data.segments.forEach(seg => {
+                                    const opt = document.createElement('option');
+                                    opt.value = seg.code;
+                                    opt.textContent = `${seg.code} (in stock: ${seg.stock})`;
+                                    segmentSelect.appendChild(opt);
+                                });
+                            }
+                            if (service.number_segment) {
+                                segmentSelect.value = service.number_segment;
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Failed to load dynamic segment stock:', err);
+                            segmentSelect.innerHTML = '<option value="">Number segment (default all)</option>';
+                        });
                 }
 
                 pricingModal.show();
