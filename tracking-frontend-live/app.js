@@ -10,7 +10,7 @@ if (queryBackend) {
     API_BASE_URL = queryBackend;
 }
 
-let refreshInterval = 1500;
+let refreshInterval = 2000;
 const queryRefresh = urlParams.get('refresh');
 if (queryRefresh) {
     refreshInterval = parseInt(queryRefresh, 10);
@@ -19,6 +19,9 @@ if (queryRefresh) {
 const pathKey = window.location.pathname.substring(1);
 let autoRefreshInterval = null;
 let lastSmsCount = -1; // Track message count for chime notification
+let isFetching = false; // Lock to prevent concurrent overlapping fetches
+let consecutiveFailures = 0;
+let hasSuccessfullyLoaded = false;
 
 function playChimeNotification() {
     try {
@@ -67,8 +70,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-
-    
     // Dynamically resolve the backend API URL
     await initConfig();
     
@@ -80,32 +81,63 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchTrackingData() {
+    if (isFetching) return;
+    isFetching = true;
+
     const spinIcon = document.getElementById('spin-icon');
     if (spinIcon) spinIcon.classList.add('active');
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/track/${pathKey}`);
+        const response = await fetch(`${API_BASE_URL}/api/track/${pathKey}`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
+            consecutiveFailures++;
             if (response.status === 404) {
                 showError('This tracking key was not found or has expired.');
-            } else {
-                showError(`Server error (${response.status}). Please try again later.`);
+                stopAutoRefresh();
+                return;
             }
-            stopAutoRefresh();
+            if (consecutiveFailures >= 10) {
+                showError(`Server error (${response.status}). Please try again later.`);
+                stopAutoRefresh();
+                return;
+            }
+            updateLoadingStatus('Reconnecting to backend...');
             return;
         }
 
         const data = await response.json();
         if (data.success) {
+            consecutiveFailures = 0;
+            hasSuccessfullyLoaded = true;
             renderTracker(data);
         } else {
-            showError('Failed to fetch tracking data.');
-            stopAutoRefresh();
+            consecutiveFailures++;
+            if (consecutiveFailures >= 10) {
+                showError('Failed to fetch tracking data.');
+                stopAutoRefresh();
+            } else {
+                updateLoadingStatus('Reconnecting...');
+            }
         }
     } catch (err) {
+        clearTimeout(timeoutId);
+        consecutiveFailures++;
         console.error('Fetch error:', err);
-        // Don't show critical UI error on transient network errors, just log and keep trying
+        if (consecutiveFailures >= 10) {
+            showError('Unable to connect to live tracking server. Please try refreshing.');
+            stopAutoRefresh();
+        } else {
+            updateLoadingStatus('Connecting to backend...');
+        }
     } finally {
+        isFetching = false;
         if (spinIcon) {
             setTimeout(() => {
                 spinIcon.classList.remove('active');
@@ -113,6 +145,17 @@ async function fetchTrackingData() {
         }
     }
 }
+
+function updateLoadingStatus(msg) {
+    if (hasSuccessfullyLoaded) return;
+    const msgList = document.getElementById('messages-list');
+    if (!msgList) return;
+    const pTag = msgList.querySelector('.loading-state p');
+    if (pTag) {
+        pTag.textContent = msg;
+    }
+}
+
 
 function renderTracker(data) {
     document.getElementById('tracker-card').style.display = 'block';
