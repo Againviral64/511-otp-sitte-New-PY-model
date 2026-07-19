@@ -124,8 +124,7 @@ export async function POST(request) {
                 cost_price: costPrice,
                 sms_url: entry.sms_url,
                 product_id: productId,
-                tracking_key: trackingKey,
-                is_bulk: true
+                tracking_key: trackingKey
             });
         }
 
