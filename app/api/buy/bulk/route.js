@@ -64,8 +64,8 @@ export async function POST(request) {
                 .maybeSingle();
 
             if (sRow) {
-                sellPrice = parseFloat(sRow.sell_price);
-                costPrice = parseFloat(sRow.cost_price);
+                sellPrice = isNaN(parseFloat(sRow.sell_price)) ? 0.500 : parseFloat(sRow.sell_price);
+                costPrice = isNaN(parseFloat(sRow.cost_price)) ? 0.400 : parseFloat(sRow.cost_price);
                 appName = sRow.app_name;
                 groupName = sRow.group_name;
                 validityPeriod = sRow.validity_period || 4;
@@ -233,22 +233,26 @@ export async function POST(request) {
                 let saveRetries = 0;
                 const maxSaveRetries = 3;
 
+                const finalPrice = isNaN(sellPricePKR) ? 0 : Number(sellPricePKR.toFixed(3));
+                const finalCostPrice = isNaN(costPrice) ? 0.400 : Number(costPrice.toFixed(3));
+
                 while (!orderSaved && saveRetries < maxSaveRetries) {
                     saveRetries++;
                     const { error: orderError } = await supabase
                         .from('orders')
                         .insert([{
-                            order_id: orderId,
+                            order_id: String(orderId),
                             user_id: user.id,
-                            country: groupName,
-                            service: appName,
-                            number: number,
+                            country: groupName || 'Operators Group',
+                            service: appName || 'OTP App',
+                            number: String(number),
                             status: 'PENDING',
-                            price: sellPricePKR,
-                            cost_price: costPrice,
-                            sms_url: smsUrl,
-                            product_id: service,
-                            tracking_key: trackingKey
+                            price: finalPrice,
+                            cost_price: finalCostPrice,
+                            sms_url: smsUrl ? String(smsUrl) : null,
+                            product_id: String(service),
+                            tracking_key: trackingKey,
+                            is_bulk: true
                         }]);
 
                     if (orderError) {
@@ -258,8 +262,32 @@ export async function POST(request) {
                             trackingKey = generateTrackingKey();
                             continue;
                         }
+                        // Retry with core fields if schema column issue
+                        const { error: retryErr } = await supabase
+                            .from('orders')
+                            .insert([{
+                                order_id: String(orderId),
+                                user_id: user.id,
+                                country: groupName || 'Operators Group',
+                                service: appName || 'OTP App',
+                                number: String(number),
+                                status: 'PENDING',
+                                price: finalPrice,
+                                sms_url: smsUrl ? String(smsUrl) : null,
+                                product_id: String(service),
+                                tracking_key: trackingKey
+                            }]);
+                        if (!retryErr) {
+                            orderSaved = true;
+                            successfulOrders.push({
+                                order_id: orderId,
+                                number: number,
+                                tracking_key: trackingKey
+                            });
+                            break;
+                        }
                         if (saveRetries >= maxSaveRetries) {
-                            failedOrders.push({ reason: `Database save error after ${maxSaveRetries} attempts.` });
+                            failedOrders.push({ reason: `Database save error: ${orderError.message}` });
                         }
                     } else {
                         orderSaved = true;
