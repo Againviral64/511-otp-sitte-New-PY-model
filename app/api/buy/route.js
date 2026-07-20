@@ -281,8 +281,26 @@ export async function POST(request) {
                         product_id: String(service),
                         tracking_key: trackingKey
                     }]);
+                
                 if (retryError) {
                     console.error('Critical: Retry order insert also failed:', retryError.message);
+                    // Refund user balance if order could not be saved into Supabase
+                    try {
+                        await dbClient
+                            .from('profiles')
+                            .update({
+                                balance: user.balance,
+                                spend: parseFloat(user.spend || 0),
+                                total_orders: parseInt(user.total_orders || 0)
+                            })
+                            .eq('id', user.id);
+                    } catch (refundErr) {
+                        console.error('Refund failed:', refundErr.message);
+                    }
+                    return NextResponse.json({ 
+                        success: false, 
+                        message: `Order save error: ${orderError.message || retryError.message}. Balance refunded.` 
+                    }, { status: 500 });
                 } else {
                     console.log('Order saved successfully on fallback retry.');
                 }
