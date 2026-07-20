@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders, resolveBestTime } from '@/lib/db';
+import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders, resolveBestTime, getSupabaseClient } from '@/lib/db';
 import { verifyAuth } from '@/lib/middleware';
 import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
 import { sanitizeText } from '@/lib/sanitize';
@@ -10,6 +10,7 @@ const recentPurchases = new Map();
 export async function POST(request) {
     try {
         const user = await verifyAuth(request);
+        const dbClient = getSupabaseClient(request) || supabase;
         const body = await request.json();
         const { country, service, is_bulk } = body;
 
@@ -216,10 +217,10 @@ export async function POST(request) {
         let trackingKey = 'MOCKKEY12345';
 
         // 3. Save Order and Deduct User Balance in Transaction
-        if (!isMock && supabase) {
+        if (!isMock && dbClient) {
             const newBalance = user.balance - sellPricePKR;
 
-            const { error: balanceError } = await supabase
+            const { error: balanceError } = await dbClient
                 .from('profiles')
                 .update({
                     balance: newBalance,
@@ -260,14 +261,14 @@ export async function POST(request) {
                 is_bulk: is_bulk === true
             };
 
-            const { error: orderError } = await supabase
+            const { error: orderError } = await dbClient
                 .from('orders')
                 .insert([insertPayload]);
 
             if (orderError) {
                 console.error('Failed to save user order details:', orderError.message);
                 // Retry insert without optional fields in case of schema column mismatches
-                const { error: retryError } = await supabase
+                const { error: retryError } = await dbClient
                     .from('orders')
                     .insert([{
                         order_id: String(orderId),

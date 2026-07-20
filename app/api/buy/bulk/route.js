@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders, resolveBestTime } from '@/lib/db';
+import supabase, { isMock, apiBase, apiToken, makeRequest, mockServices, mockOrders, resolveBestTime, getSupabaseClient } from '@/lib/db';
 import { verifyAuth } from '@/lib/middleware';
 import { checkRateLimit, RATE_LIMITS, getClientKey } from '@/lib/rate-limit';
 
@@ -41,6 +41,7 @@ export async function POST(request) {
         }
 
         const user = await verifyAuth(request);
+        const dbClient = getSupabaseClient(request) || supabase;
         const { country, service, quantity } = await request.json();
 
         const qty = parseInt(quantity);
@@ -238,7 +239,7 @@ export async function POST(request) {
 
                 while (!orderSaved && saveRetries < maxSaveRetries) {
                     saveRetries++;
-                    const { error: orderError } = await supabase
+                    const { error: orderError } = await dbClient
                         .from('orders')
                         .insert([{
                             order_id: String(orderId),
@@ -263,7 +264,7 @@ export async function POST(request) {
                             continue;
                         }
                         // Retry with core fields if schema column issue
-                        const { error: retryErr } = await supabase
+                        const { error: retryErr } = await dbClient
                             .from('orders')
                             .insert([{
                                 order_id: String(orderId),
