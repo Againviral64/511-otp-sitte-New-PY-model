@@ -213,6 +213,8 @@ export async function POST(request) {
             }
         }
 
+        let trackingKey = 'MOCKKEY12345';
+
         // 3. Save Order and Deduct User Balance in Transaction
         if (!isMock && supabase) {
             const newBalance = user.balance - sellPricePKR;
@@ -231,7 +233,7 @@ export async function POST(request) {
                 return NextResponse.json({ success: false, message: 'Payment deduction error.' });
             }
 
-            const trackingKey = (() => {
+            trackingKey = (() => {
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
                 let result = '';
                 for (let i = 0; i < 12; i++) {
@@ -258,30 +260,11 @@ export async function POST(request) {
 
             if (orderError) {
                 console.error('Failed to save user order details:', orderError.message);
-                try {
-                    const fs = require('fs');
-                    fs.appendFileSync('d:/Zain Project/511 APi OTP/db_error.log', `[${new Date().toISOString()}] Insert failed: ${orderError.message}\nPayload: ${JSON.stringify({
-                        order_id: orderId,
-                        user_id: user.id,
-                        country: groupName,
-                        service: appName,
-                        number: number,
-                        status: 'PENDING',
-                        price: sellPricePKR,
-                        sms_url: smsUrl,
-                        product_id: service,
-                        tracking_key: trackingKey
-                    }, null, 2)}\n\n`);
-                } catch (err) {
-                    console.error('Logging to file failed:', err.message);
-                }
             }
         }
 
         // Record successful purchase for cooldown tracking
         recentPurchases.set(purchaseKey, Date.now());
-
-        const generatedKey = !isMock && supabase ? (await supabase.from('orders').select('tracking_key').eq('order_id', orderId).maybeSingle()).data?.tracking_key : 'MOCKKEY12345';
 
         return NextResponse.json({
             success: true,
@@ -291,7 +274,7 @@ export async function POST(request) {
             number: number,
             price: sellPricePKR.toFixed(3),
             sms_url: smsUrl,
-            tracking_key: generatedKey
+            tracking_key: trackingKey
         });
     } catch (err) {
         return NextResponse.json({ success: false, message: err.message }, { status: 401 });

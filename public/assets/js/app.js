@@ -1561,18 +1561,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Poll for tracking keys assigned by Python poller.
-     * Checks /api/sms for each order every 3 seconds, up to 30 attempts (90 seconds).
+     * Poll for tracking keys assigned by Python poller or database.
+     * Checks /api/sms for each order every 2 seconds, up to 5 attempts (10 seconds max).
      */
     async function pollBulkTrackingKeys(pendingOrders, allOrders, outputDisplay, progressText) {
         let retries = 0;
-        const maxRetries = 30;
+        const maxRetries = 5;
 
         while (pendingOrders.length > 0 && retries < maxRetries) {
             retries++;
             if (progressText) progressText.textContent = `Resolving tracking links... (attempt ${retries}/${maxRetries}, ${pendingOrders.length} pending)`;
 
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             const stillPending = [];
             for (const po of pendingOrders) {
@@ -1596,6 +1596,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (stillPending.length > 0) {
                 pendingOrders.push(...stillPending);
             }
+        }
+
+        // Fallback for any orders that could not resolve a tracking key from backend
+        if (pendingOrders.length > 0) {
+            pendingOrders.forEach(po => {
+                if (!po.tracking_key && po.order_id) {
+                    po.tracking_key = po.order_id;
+                }
+            });
+            updateBulkOutput(allOrders, outputDisplay);
         }
     }
 
