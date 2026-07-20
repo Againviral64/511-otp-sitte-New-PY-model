@@ -257,8 +257,7 @@ export async function POST(request) {
                 cost_price: finalCostPrice,
                 sms_url: smsUrl ? String(smsUrl) : null,
                 product_id: String(service),
-                tracking_key: trackingKey,
-                is_bulk: is_bulk === true
+                tracking_key: trackingKey
             };
 
             const { error: orderError } = await dbClient
